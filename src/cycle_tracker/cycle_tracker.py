@@ -109,7 +109,20 @@ def print_help():
     print("    '68% confidence' = ±1 standard deviation range")
     print("    Quality: 🟢 80+ / 🟡 60-79 / 🔴 <60\n")
     
+    print("━━━ Limitations ━━━\n")
+    print("  Phase Boundaries:")
+    print("    The follicular/luteal boundary (ovulation) is estimated at")
+    print("    day 14 of the cycle (statistical average). For personalization,")
+    print("    symptom tracking (BBT, LH tests, cervical mucus) would be needed.")
+    print("    This can be made user-configurable in future versions.\n")
+    
+    print("  Confidence Intervals:")
+    print("    Current confidence values are heuristic approximations.")
+    print("    Proper statistical confidence intervals (t-distribution for")
+    print("    small samples) are planned for future implementation.\n")
+    
     print("For more info: README.md, CITATIONS.md")
+    print("")
 
 
 def main():
