@@ -15,6 +15,11 @@ DATA_FILE = SCRIPT_DIR / ".cycle_tracker_data.csv"
 
 DEFAULT_PERIOD_LENGTH = 5
 DEFAULT_CYCLE_LENGTH = 28
+# NOTE: Follicular phase length is estimated at ~14 days (ovulation midpoint).
+# This is hardcoded because precise ovulation tracking requires symptom monitoring
+# (basal body temperature, cervical mucus, LH tests) which is beyond scope.
+# TODO: Consider making this user-configurable in config for better personalization.
+DEFAULT_FOLLICULAR_PHASE_LENGTH = 14
 
 # Outlier detection thresholds
 MIN_CYCLE_LENGTH = 18  # Cycles shorter than this are likely errors

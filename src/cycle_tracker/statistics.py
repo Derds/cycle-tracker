@@ -8,7 +8,7 @@ adapted for individual tracking.
 import math
 from typing import List, Tuple, Optional, Dict
 from datetime import datetime, timedelta
-from data_manager import Cycle, get_valid_cycles, DEFAULT_PERIOD_LENGTH, DEFAULT_CYCLE_LENGTH
+from data_manager import Cycle, get_valid_cycles, DEFAULT_PERIOD_LENGTH, DEFAULT_CYCLE_LENGTH, DEFAULT_FOLLICULAR_PHASE_LENGTH
 
 
 def calculate_average_period_length(cycles: List[Cycle]) -> int:
@@ -125,6 +125,11 @@ def calculate_luteal_phase_stats(cycles: List[Cycle]) -> Tuple[int, float]:
     Calculate luteal phase statistics.
     
     The luteal phase is typically more stable than overall cycle length.
+    
+    NOTE: This calculation uses DEFAULT_FOLLICULAR_PHASE_LENGTH (14 days) as an
+    estimate for ovulation. Without symptom tracking (BBT, cervical mucus, LH tests),
+    we cannot determine exact ovulation timing, so we use the statistical average.
+    This may be less accurate for individuals with shorter/longer follicular phases.
     """
     valid_cycles = get_valid_cycles(cycles, exclude_outliers=True)
     
@@ -133,8 +138,9 @@ def calculate_luteal_phase_stats(cycles: List[Cycle]) -> Tuple[int, float]:
     
     luteal_lengths = []
     for cycle in valid_cycles:
-        # Estimate: ovulation ~14 days from start
-        estimated_luteal = min(cycle.cycle_length - 14, 16)
+        # Estimate: ovulation at DEFAULT_FOLLICULAR_PHASE_LENGTH days from start
+        # LIMITATION: Without symptom tracking, this is an approximation
+        estimated_luteal = min(cycle.cycle_length - DEFAULT_FOLLICULAR_PHASE_LENGTH, 16)
         if estimated_luteal > 10:
             luteal_lengths.append(estimated_luteal)
     

@@ -13,7 +13,8 @@ from statistics import (
     calculate_tracking_quality,
     calculate_luteal_phase_stats,
     get_daily_updated_prediction,
-    get_valid_cycles
+    get_valid_cycles,
+    DEFAULT_FOLLICULAR_PHASE_LENGTH
 )
 
 # Phase visual indicators
