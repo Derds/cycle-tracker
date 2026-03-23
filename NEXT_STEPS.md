@@ -18,20 +18,22 @@
 - [x] Comprehensive help system
 - [x] Auto-complete previous cycle on new start
 - [x] Period end tracking separate from cycle
+- [x] **Modular code architecture** (clean, maintainable)
+- [x] **Outlier detection** (excludes cycles <18 or >45 days)
+- [x] **Input validation** (prevents bad data)
+- [x] **Error handling** (graceful, helpful messages)
 
 ### Phase 2: Data Model Simplification
 
-#### Simplify CSV Schema
-- [ ] Refactor from: start_date, end_date, menstrual_days, period_end_date
-- [ ] To: start_date, period_end_date, period_length
-- [ ] Derive cycle_end_date from next cycle's start_date
-- [ ] Update all ~50+ references in codebase
-- [ ] Migration tool for existing data
+#### Status: PARTIALLY COMPLETED ✅
+- [x] Refactored into clean modules
+- [x] Cycle class with validation
+- [x] Outlier handling
+- [x] Better data validation
+- [ ] Full CSV schema simplification (deferred)
 
-**Complexity:** High (requires careful refactoring)  
-**Benefit:** Simpler data model, clearer concept  
-**Risk:** Breaking existing functionality  
-**Status:** Deferred - current model works well
+The code is now well-organized in 5 modules instead of 1 monolith.
+Further CSV simplification can wait.
 
 ### Phase 3: Data Export & Visualisation
 
