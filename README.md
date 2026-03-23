@@ -23,7 +23,15 @@ For girls who hate their data being stolen for advertising ✨🩸
 - No internet required - uses mathematical calculations
 - Configurable location (defaults to London)
 
-See [MOON_PHASE.md](MOON_PHASE.md) for moon tracker documentation.
+### Combined Cycle & Moon View 🩸🌙 (Optional)
+- See both cycle and moon phase together
+- Analyze correlations between your cycle and moon phases
+- Discover if your cycle aligns with lunar cycles
+- Statistical breakdown by cycle phase
+- Completely optional - cycle tracker works independently
+
+See [MOON_PHASE.md](MOON_PHASE.md) for moon tracker documentation.  
+See [CYCLE_MOON.md](CYCLE_MOON.md) for combined tracker documentation.
 
 ### Statistical Approach
 
@@ -50,6 +58,7 @@ Create symlinks for easy access:
 # From the cycle-tracker directory
 ln -s "$(pwd)/cycle-tracker" /usr/local/bin/cycle-tracker
 ln -s "$(pwd)/moon-phase" /usr/local/bin/moon-phase
+ln -s "$(pwd)/cycle-moon" /usr/local/bin/cycle-moon
 ```
 
 Or add to your PATH in `~/.zshrc` or `~/.bashrc`:
@@ -151,6 +160,29 @@ Edit `moon_config.json`:
 ```
 
 See [MOON_PHASE.md](MOON_PHASE.md) for more details.
+
+### Combined Cycle & Moon Commands 🩸🌙
+
+#### View both cycles together
+```bash
+cycle-moon
+```
+
+Shows your current menstrual cycle phase and moon phase side-by-side.
+
+#### Analyze correlations
+```bash
+cycle-moon analyze
+```
+
+Analyzes your historical data to find patterns:
+- Which moon phases occur during each cycle phase
+- Percentage breakdowns
+- Notable patterns (if any)
+
+Requires at least 2 completed cycles. See [CYCLE_MOON.md](CYCLE_MOON.md) for details.
+
+**Note**: This is optional! The cycle tracker works completely independently.
 
 ## How It Works
 

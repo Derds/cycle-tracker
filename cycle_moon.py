@@ -1,0 +1,243 @@
+#!/usr/bin/env python3
+"""
+Combined Cycle & Moon Phase Tracker
+
+Shows both menstrual cycle phase and moon phase in a single view.
+Analyzes correlations between cycle phases and moon phases over time.
+
+This is an optional add-on - the main cycle tracker works independently.
+"""
+
+import sys
+from pathlib import Path
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+# Import from our existing modules
+SCRIPT_DIR = Path(__file__).parent.resolve()
+sys.path.insert(0, str(SCRIPT_DIR))
+
+import cycle_tracker
+import moon_phase
+
+def get_combined_visual():
+    """Create a combined visual display of both cycles"""
+    today = datetime.now().date()
+    
+    # Get cycle info
+    cycles = cycle_tracker.load_cycles()
+    if cycles:
+        cycle_phase, cycle_info = cycle_tracker.get_current_phase(today)
+    else:
+        cycle_phase = None
+        cycle_info = "No cycle data"
+    
+    # Get moon info
+    moon_position = moon_phase.calculate_moon_phase()
+    moon_key, moon_name = moon_phase.get_moon_phase_name(moon_position)
+    moon_emoji = moon_phase.MOON_PHASES[moon_key]
+    moon_illumination = moon_phase.calculate_illumination(moon_position)
+    
+    # Get cycle visual
+    if cycle_phase:
+        cycle_emoji = cycle_tracker.PHASE_VISUALS.get(cycle_phase, '○')
+        cycle_display = f"{cycle_emoji} {cycle_phase.upper()}"
+    else:
+        cycle_emoji = '○'
+        cycle_display = "No active cycle"
+    
+    # Build display
+    lines = [
+        "╭────────────────────────────────────────────────────────╮",
+        "│  🩸 CYCLE & MOON TRACKER 🌙                            │",
+        "├────────────────────────────────────────────────────────┤",
+        f"│  Menstrual Cycle: {cycle_display:38s} │",
+    ]
+    
+    if cycle_phase:
+        lines.append(f"│    {cycle_info:50s} │")
+    else:
+        lines.append(f"│    {cycle_info:50s} │")
+    
+    lines.extend([
+        "│                                                        │",
+        f"│  Moon Phase: {moon_emoji} {moon_name:38s} │",
+        f"│    {moon_illumination:5.1f}% illuminated                                │",
+        "╰────────────────────────────────────────────────────────╯"
+    ])
+    
+    return '\n'.join(lines)
+
+def analyze_cycle_moon_correlation():
+    """
+    Analyze correlation between cycle phases and moon phases.
+    
+    Shows which moon phases you're typically in during each cycle phase.
+    """
+    cycles = cycle_tracker.load_cycles()
+    if not cycles or len(cycles) < 2:
+        return None
+    
+    # Track which moon phases occur during which cycle phases
+    correlations = {
+        'menstrual': defaultdict(int),
+        'follicular': defaultdict(int),
+        'luteal': defaultdict(int)
+    }
+    
+    total_days = {
+        'menstrual': 0,
+        'follicular': 0,
+        'luteal': 0
+    }
+    
+    # Analyze each completed cycle
+    for cycle in cycles:
+        if not cycle['end_date']:
+            continue
+        
+        start = cycle['start_date']
+        end = cycle['end_date']
+        menstrual_days = cycle['menstrual_days']
+        cycle_length = (end - start).days
+        
+        # Menstrual phase
+        for day in range(menstrual_days):
+            date = start + timedelta(days=day)
+            moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
+            moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
+            correlations['menstrual'][moon_key] += 1
+            total_days['menstrual'] += 1
+        
+        # Follicular phase (menstrual to day 14)
+        for day in range(menstrual_days, min(14, cycle_length)):
+            date = start + timedelta(days=day)
+            moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
+            moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
+            correlations['follicular'][moon_key] += 1
+            total_days['follicular'] += 1
+        
+        # Luteal phase (day 14 onwards)
+        for day in range(14, cycle_length):
+            date = start + timedelta(days=day)
+            moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
+            moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
+            correlations['luteal'][moon_key] += 1
+            total_days['luteal'] += 1
+    
+    return correlations, total_days
+
+def print_correlation_analysis():
+    """Print detailed correlation analysis"""
+    result = analyze_cycle_moon_correlation()
+    
+    if not result:
+        print("Need at least 2 completed cycles for correlation analysis.")
+        return
+    
+    correlations, total_days = result
+    
+    print("\n╭────────────────────────────────────────────────────────╮")
+    print("│  🔍 CYCLE & MOON CORRELATION ANALYSIS                  │")
+    print("╰────────────────────────────────────────────────────────╯\n")
+    
+    # Summary of analyzed cycles
+    cycles = cycle_tracker.load_cycles()
+    completed = [c for c in cycles if c['end_date']]
+    print(f"Analyzed {len(completed)} completed cycles\n")
+    
+    # For each cycle phase, show most common moon phases
+    for cycle_phase in ['menstrual', 'follicular', 'luteal']:
+        if total_days[cycle_phase] == 0:
+            continue
+        
+        print(f"━━━ During {cycle_phase.upper()} phase ━━━")
+        print(f"Total days analyzed: {total_days[cycle_phase]}\n")
+        
+        # Calculate percentages
+        phase_counts = correlations[cycle_phase]
+        sorted_phases = sorted(phase_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        if sorted_phases:
+            for moon_key, count in sorted_phases[:3]:  # Top 3
+                percentage = (count / total_days[cycle_phase]) * 100
+                emoji = moon_phase.MOON_PHASES[moon_key]
+                _, moon_name = moon_phase.get_moon_phase_name(0.5 if moon_key == 'full' else 0.0)
+                # Get proper name
+                for pos in [0.01, 0.1, 0.25, 0.45, 0.5, 0.6, 0.75, 0.9]:
+                    key, name = moon_phase.get_moon_phase_name(pos)
+                    if key == moon_key:
+                        moon_name = name
+                        break
+                
+                print(f"  {emoji} {moon_name:20s} {percentage:5.1f}% ({count} days)")
+        print()
+    
+    # Interesting patterns
+    print("━━━ Patterns ━━━")
+    
+    # Check if there's a dominant pattern
+    for cycle_phase in ['menstrual', 'follicular', 'luteal']:
+        if total_days[cycle_phase] == 0:
+            continue
+        
+        phase_counts = correlations[cycle_phase]
+        if phase_counts:
+            max_moon = max(phase_counts.items(), key=lambda x: x[1])
+            max_percentage = (max_moon[1] / total_days[cycle_phase]) * 100
+            
+            if max_percentage > 30:  # If one moon phase dominates >30%
+                emoji = moon_phase.MOON_PHASES[max_moon[0]]
+                print(f"  • Your {cycle_phase} phase often coincides with {emoji} moon phases")
+    
+    # Check for full/new moon alignment
+    menstrual_new = correlations['menstrual'].get('new', 0)
+    menstrual_full = correlations['menstrual'].get('full', 0)
+    
+    if total_days['menstrual'] > 0:
+        new_percent = (menstrual_new / total_days['menstrual']) * 100
+        full_percent = (menstrual_full / total_days['menstrual']) * 100
+        
+        if new_percent > 20:
+            print(f"  • Your period often starts around 🌑 new moon ({new_percent:.0f}% of the time)")
+        if full_percent > 20:
+            print(f"  • Your period often starts around 🌕 full moon ({full_percent:.0f}% of the time)")
+    
+    print("\n💡 Note: Correlation does not imply causation!")
+    print("   These patterns may be coincidental.\n")
+
+def print_simple_view():
+    """Print simple combined view"""
+    print(get_combined_visual())
+    print()
+    
+    # Add quick stats if we have data
+    cycles = cycle_tracker.load_cycles()
+    if cycles and len([c for c in cycles if c['end_date']]) >= 2:
+        print("Run 'cycle-moon analyze' for correlation analysis")
+
+def main():
+    """Main entry point"""
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        
+        if command == 'analyze':
+            print_simple_view()
+            print_correlation_analysis()
+        elif command in ['--help', '-h']:
+            print("Combined Cycle & Moon Tracker")
+            print()
+            print("Usage:")
+            print("  cycle-moon           - Show current cycle and moon phase")
+            print("  cycle-moon analyze   - Show correlation analysis")
+            print()
+            print("This tool combines data from cycle-tracker and moon-phase")
+            print("to show both phases together and analyze patterns.")
+        else:
+            print(f"Unknown command: {command}")
+            print("Use 'cycle-moon --help' for usage information")
+    else:
+        print_simple_view()
+
+if __name__ == "__main__":
+    main()
