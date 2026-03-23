@@ -213,7 +213,7 @@ def graph_cycle_history(cycles: List[Cycle]) -> str:
         # Check if data is variable enough to warrant a chart
         # Show chart if range > 1 day OR there's a meaningful trend
         range_period = max_period - min_period
-        is_variable = range_period > 1 or abs(slope_period) >= 0.05
+        is_variable = range_period > 1 or abs(slope_period) >= 0.06
         
         if is_variable:
             # Show the chart for variable data
