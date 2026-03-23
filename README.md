@@ -6,6 +6,7 @@ For girls who hate their data being stolen for advertising ✨🩸
 
 ## Features
 
+### Cycle Tracking
 - Track cycle phases: menstrual, follicular, and luteal
 - **Prediction ranges with confidence intervals** (not just averages!)
 - **Tracking quality assessment** to understand prediction accuracy
@@ -14,6 +15,15 @@ For girls who hate their data being stolen for advertising ✨🩸
 - User-controlled cycle start and end dates
 - CSV-based data storage for historical tracking
 - Automatic calculation of patterns from your historical data
+
+### Moon Phase Tracking 🌙
+- Check current moon phase with a single command
+- See illumination percentage and days in lunar cycle
+- Calculate days until next full or new moon
+- No internet required - uses mathematical calculations
+- Configurable location (defaults to London)
+
+See [MOON_PHASE.md](MOON_PHASE.md) for moon tracker documentation.
 
 ### Statistical Approach
 
@@ -34,11 +44,12 @@ Make the script executable:
 chmod +x cycle_tracker.py
 ```
 
-Create a symlink for easy access:
+Create symlinks for easy access:
 
 ```bash
 # From the cycle-tracker directory
 ln -s "$(pwd)/cycle-tracker" /usr/local/bin/cycle-tracker
+ln -s "$(pwd)/moon-phase" /usr/local/bin/moon-phase
 ```
 
 Or add to your PATH in `~/.zshrc` or `~/.bashrc`:
@@ -49,7 +60,9 @@ export PATH="$PATH:/path/to/cycle-tracker"
 
 ## Usage
 
-### Initialize data file (first time setup)
+### Cycle Tracker Commands
+
+#### Initialize data file (first time setup)
 ```bash
 cycle-tracker setup
 ```
@@ -109,6 +122,35 @@ Shows prediction for the next cycle with:
 - Likely date range (68% confidence interval)
 - Based on your historical patterns
 - Luteal phase insights
+
+### Moon Phase Commands 🌙
+
+#### Check current moon phase
+```bash
+moon-phase
+```
+
+Shows:
+- Current moon phase with emoji (🌑🌒🌓🌔🌕🌖🌗🌘)
+- Illumination percentage
+- Day in lunar cycle (29.5 days)
+- Days until next full or new moon
+- Your location and current time
+
+#### Configure location
+Edit `moon_config.json`:
+```json
+{
+  "location": {
+    "name": "Your City",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "timezone": "Europe/London"
+  }
+}
+```
+
+See [MOON_PHASE.md](MOON_PHASE.md) for more details.
 
 ## How It Works
 

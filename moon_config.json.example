@@ -1,0 +1,29 @@
+{
+  "location": {
+    "name": "London",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "timezone": "Europe/London"
+  },
+  "comment": "Edit this file and save as moon_config.json",
+  "examples": {
+    "new_york": {
+      "name": "New York",
+      "latitude": 40.7128,
+      "longitude": -74.0060,
+      "timezone": "America/New_York"
+    },
+    "sydney": {
+      "name": "Sydney",
+      "latitude": -33.8688,
+      "longitude": 151.2093,
+      "timezone": "Australia/Sydney"
+    },
+    "tokyo": {
+      "name": "Tokyo",
+      "latitude": 35.6762,
+      "longitude": 139.6503,
+      "timezone": "Asia/Tokyo"
+    }
+  }
+}
