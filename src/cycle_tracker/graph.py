@@ -189,15 +189,6 @@ def graph_cycle_history(cycles: List[Cycle]) -> str:
         period_data = [(c.start_date, c.period_length) for c in period_cycles]
         period_values = [d[1] for d in period_data]
         
-        period_chart = create_ascii_bar_chart(
-            period_data,
-            "Menstrual Phase Length Over Time",
-            "Days",
-            height=10
-        )
-        output.append(period_chart)
-        output.append("")
-        
         # Statistics for period length
         mean_period = sum(period_values) / len(period_values)
         min_period = min(period_values)
@@ -211,6 +202,24 @@ def graph_cycle_history(cycles: List[Cycle]) -> str:
         denominator_period = sum((x - mean_x_period) ** 2 for x in x_vals_period)
         slope_period = numerator_period / denominator_period if denominator_period != 0 else 0
         
+        # Check if data is variable enough to warrant a chart
+        # Show chart if range > 1 day OR there's a meaningful trend
+        range_period = max_period - min_period
+        is_variable = range_period > 1 or abs(slope_period) >= 0.05
+        
+        if is_variable:
+            # Show the chart for variable data
+            period_chart = create_ascii_bar_chart(
+                period_data,
+                "Menstrual Phase Length Over Time",
+                "Days",
+                height=10
+            )
+            output.append(period_chart)
+            output.append("")
+        
+        # Always show statistics
+        output.append("MENSTRUAL PHASE LENGTH:")
         output.append(f"  Average: {mean_period:.1f} days  |  Range: {min_period}-{max_period} days")
         
         if abs(slope_period) < 0.01:
@@ -220,9 +229,13 @@ def graph_cycle_history(cycles: List[Cycle]) -> str:
         else:
             trend_text_period = f"Trend: Decreasing ↘ ({slope_period:.2f} days per cycle)"
         output.append(f"  {trend_text_period}")
+        
+        if not is_variable:
+            output.append(f"  (Chart hidden - data is consistent)")
+        
         output.append("")
     else:
-        output.append("Track period end dates to see menstrual phase trends!")
+        output.append("Track period end dates to see menstrual phase statistics!")
         output.append("Use: cycle-tracker end-period")
         output.append("")
     
