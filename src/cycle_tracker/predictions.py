@@ -9,7 +9,8 @@ from statistics import (
     calculate_average_period_length,
     calculate_average_cycle_length,
     calculate_cycle_statistics,
-    get_valid_cycles
+    get_valid_cycles,
+    DEFAULT_FOLLICULAR_PHASE_LENGTH
 )
 
 
