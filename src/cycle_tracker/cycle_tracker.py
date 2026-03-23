@@ -20,7 +20,7 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# Add current directory to path for imports
+# Add src/cycle_tracker to path for imports
 SCRIPT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(SCRIPT_DIR))
 

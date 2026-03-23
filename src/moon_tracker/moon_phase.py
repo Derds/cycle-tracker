@@ -11,8 +11,8 @@ import math
 from datetime import datetime
 from pathlib import Path
 
-# Constants
-SCRIPT_DIR = Path(__file__).parent.resolve()
+# Constants - config file is in project root
+SCRIPT_DIR = Path(__file__).parent.parent.parent.resolve()
 CONFIG_FILE = SCRIPT_DIR / "moon_config.json"
 
 # Moon phase emojis

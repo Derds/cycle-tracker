@@ -4,4 +4,4 @@
 # Resolve the real path even if this script is symlinked
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || greadlink -f "${BASH_SOURCE[0]}" 2>/dev/null || python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-python3 "$SCRIPT_DIR/cycle_tracker.py" "$@"
+python3 "$SCRIPT_DIR/src/cycle_tracker/cycle_tracker.py" "$@"

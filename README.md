@@ -51,6 +51,39 @@ See [detailed usage](#usage) below.
 
 **All optional!** The cycle tracker works completely independently.
 
+## Project Structure
+
+```
+cycle-tracker/
+├── README.md                    # Main documentation
+├── cycle-tracker                # CLI wrapper for cycle tracker
+├── moon-phase                   # CLI wrapper for moon phase
+├── cycle-moon                   # CLI wrapper for combined view
+├── cycle_moon.py                # Combined tracker implementation
+│
+├── src/
+│   ├── cycle_tracker/           # Core cycle tracker modules
+│   │   ├── cycle_tracker.py     # Main CLI
+│   │   ├── data_manager.py      # Data models & storage
+│   │   ├── statistics.py        # Statistical calculations
+│   │   ├── predictions.py       # Phase detection logic
+│   │   └── display.py           # Output formatting
+│   │
+│   └── moon_tracker/            # Moon phase tracker
+│       └── moon_phase.py        # Moon calculations
+│
+└── docs/                        # Documentation
+    ├── CITATIONS.md             # Research credits
+    ├── CODE_STRUCTURE.md        # Architecture docs
+    ├── CYCLE_MOON.md            # Combined tracker guide
+    ├── MOON_PHASE.md            # Moon tracker guide
+    └── NEXT_STEPS.md            # Future enhancements
+```
+
+**Data files** (git-ignored):
+- `.cycle_tracker_data.csv` - Your cycle data (in project root)
+- `moon_config.json` - Moon tracker location config (optional)
+
 ## Installation
 
 <details>
@@ -164,7 +197,7 @@ cp moon_config.json.example moon_config.json
 # Edit moon_config.json with your city coordinates
 ```
 
-See [MOON_PHASE.md](MOON_PHASE.md) for details.
+See [docs/MOON_PHASE.md](docs/MOON_PHASE.md) for details.
 
 </details>
 
@@ -193,7 +226,7 @@ This tracker uses research-based methods adapted for individual use:
 - **Quality assessment**: Warns when data is insufficient
 - **Sequential updates**: Predictions improve as cycle progresses
 
-**Research credits:** Methods inspired by [Urteaga et al. (2021-2022)](CITATIONS.md) menstrual cycle prediction research.
+**Research credits:** Methods inspired by [Urteaga et al. (2021-2022)](docs/CITATIONS.md) menstrual cycle prediction research.
 
 ### Data Storage
 
@@ -211,8 +244,11 @@ This tracker uses research-based methods adapted for individual use:
 
 ## Documentation
 
-- **[CITATIONS.md](CITATIONS.md)** - Research attribution
-- **[MOON_PHASE.md](MOON_PHASE.md)** - Moon tracker guide
+- **[docs/CITATIONS.md](docs/CITATIONS.md)** - Research attribution
+- **[docs/MOON_PHASE.md](docs/MOON_PHASE.md)** - Moon tracker guide
+- **[docs/CYCLE_MOON.md](docs/CYCLE_MOON.md)** - Combined tracker guide
+- **[docs/CODE_STRUCTURE.md](docs/CODE_STRUCTURE.md)** - Architecture documentation
+- **[docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)** - Planned enhancements
 - **[CYCLE_MOON.md](CYCLE_MOON.md)** - Combined tracker guide
 
 ## Testing

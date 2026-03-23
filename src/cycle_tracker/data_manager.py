@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
 
-SCRIPT_DIR = Path(__file__).parent.resolve()
+# Data file is stored in project root
+SCRIPT_DIR = Path(__file__).parent.parent.parent.resolve()
 DATA_FILE = SCRIPT_DIR / ".cycle_tracker_data.csv"
 
 DEFAULT_PERIOD_LENGTH = 5

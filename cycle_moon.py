@@ -13,14 +13,15 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-# Import from our existing modules
+# Add module directories to path
 SCRIPT_DIR = Path(__file__).parent.resolve()
-sys.path.insert(0, str(SCRIPT_DIR))
+sys.path.insert(0, str(SCRIPT_DIR / "src" / "cycle_tracker"))
+sys.path.insert(0, str(SCRIPT_DIR / "src" / "moon_tracker"))
 
 # Import modular components
 from data_manager import load_cycles
 from predictions import get_current_phase
-from statistics import get_valid_cycles
+from statistics import get_valid_cycles, calculate_average_period_length
 import moon_phase
 
 def get_combined_visual():
