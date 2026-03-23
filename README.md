@@ -311,6 +311,21 @@ Tests cover:
 
 All tests use synthetic data and run in seconds. No real data required.
 
+## Known Limitations
+
+### Phase Boundary Detection
+**Follicular/Luteal Phase Boundary**: The transition from follicular to luteal phase (ovulation) is currently estimated at day 14 of the cycle. This is a statistical average and may not be accurate for individuals with shorter or longer follicular phases.
+
+**Why?** Precise ovulation detection requires symptom tracking:
+- Basal body temperature (BBT) monitoring
+- Cervical mucus changes
+- Luteinizing hormone (LH) test strips
+- Cervical position changes
+
+**Future Enhancement**: Consider making the follicular phase length user-configurable in a config file for better personalization (e.g., if you know from tracking that you typically ovulate on day 12 or 16).
+
+**Current Impact**: Phase labels (follicular vs luteal) in the second half of your cycle may be approximate. However, predictions for cycle start dates remain accurate as they're based on full cycle length patterns.
+
 ## Why Use This?
 
 ✅ **Privacy-first**: No data collection, works offline  
