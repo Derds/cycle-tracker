@@ -1,0 +1,5 @@
+#!/bin/bash
+# Cycle Tracker CLI wrapper
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/cycle_tracker.py" "$@"
