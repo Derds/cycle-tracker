@@ -89,9 +89,16 @@ def _prepare_status_data(cycles: List[Cycle]) -> dict:
 
 
 def _calculate_period_info(current_cycle: Cycle, cycles: List[Cycle], today: datetime.date) -> Optional[str]:
-    """Calculate period end information"""
+    """
+    Calculate period end information.
+    Pure business logic - returns data dict instead of formatted string.
+    """
     if current_cycle.period_end_date:
-        return f"Period: {current_cycle.period_length} days (ended {current_cycle.period_end_date.strftime('%Y-%m-%d')})"
+        return {
+            'type': 'completed',
+            'length': current_cycle.period_length,
+            'end_date': current_cycle.period_end_date
+        }
     
     avg_period = calculate_average_period_length(cycles)
     period_days = current_cycle.period_length or avg_period
@@ -102,10 +109,11 @@ def _calculate_period_info(current_cycle: Cycle, cycles: List[Cycle], today: dat
     
     days_left = (period_end_estimate - today).days
     
-    if days_left == 0:
-        return f"Period expected to end today ({period_end_estimate.strftime('%Y-%m-%d')})"
-    
-    return f"Period expected to end in {days_left} day(s) ({period_end_estimate.strftime('%Y-%m-%d')})"
+    return {
+        'type': 'estimated',
+        'days_left': days_left,
+        'end_date': period_end_estimate
+    }
 
 
 def _calculate_statistics(cycles: List[Cycle], valid_cycles: List[Cycle], current_cycle: Cycle, days_elapsed: int) -> dict:
@@ -120,6 +128,7 @@ def _calculate_statistics(cycles: List[Cycle], valid_cycles: List[Cycle], curren
         'std_dev': std_dev,
         'prediction': prediction if prediction['days_remaining'] > 0 else None,
         'quality': quality,
+        'quality_level': _get_quality_level(quality),
         'outlier_count': len(outliers)
     }
     
@@ -131,6 +140,15 @@ def _calculate_statistics(cycles: List[Cycle], valid_cycles: List[Cycle], curren
     return stats
 
 
+def _get_quality_level(quality: int) -> str:
+    """Determine quality level indicator (business logic)"""
+    if quality >= 80:
+        return "🟢"
+    if quality >= 60:
+        return "🟡"
+    return "🔴"
+
+
 def _render_status_box(data: dict):
     """Render status data in formatted box"""
     lines = [
@@ -139,8 +157,15 @@ def _render_status_box(data: dict):
         data['phase_info']
     ]
     
-    if data['period_info']:
-        lines.append(data['period_info'])
+    period_info = data.get('period_info')
+    if period_info:
+        if period_info['type'] == 'completed':
+            lines.append(f"Period: {period_info['length']} days (ended {period_info['end_date'].strftime('%Y-%m-%d')})")
+        elif period_info['type'] == 'estimated':
+            if period_info['days_left'] == 0:
+                lines.append(f"Period expected to end today ({period_info['end_date'].strftime('%Y-%m-%d')})")
+            else:
+                lines.append(f"Period expected to end in {period_info['days_left']} day(s) ({period_info['end_date'].strftime('%Y-%m-%d')})")
     
     stats = data.get('statistics')
     if not stats:
@@ -155,11 +180,9 @@ def _render_status_box(data: dict):
         earliest = pred['earliest_end'].strftime('%b %d')
         latest = pred['latest_end'].strftime('%b %d')
         
-        # NOTE: Confidence value is heuristic, not statistical
         lines.append(f"Expected cycle end: {earliest} - {latest} ({pred['confidence']}% confidence*)")
     
-    quality_emoji = "🟢" if stats['quality'] >= 80 else "🟡" if stats['quality'] >= 60 else "🔴"
-    lines.append(f"Tracking quality: {quality_emoji} {stats['quality']}/100")
+    lines.append(f"Tracking quality: {stats['quality_level']} {stats['quality']}/100")
     
     if stats['outlier_count'] > 0:
         lines.append(f"⚠️  {stats['outlier_count']} outlier cycle(s) excluded from stats")
@@ -168,7 +191,6 @@ def _render_status_box(data: dict):
         luteal_mean, _ = stats['luteal']
         lines.append(f"Luteal phase: ~{luteal_mean} days (stable)")
     
-    # Add note about confidence
     if stats['prediction']:
         lines.append("")
         lines.append("*Confidence is heuristic-based, not statistical")
@@ -224,13 +246,8 @@ def _render_calendar_body(cycles: List[Cycle], month_cal, target_year: int, targ
                 continue
             
             date = datetime(target_year, target_month, day).date()
-            phase, _ = predict_phase_on_date(cycles, date)
-            
-            if phase:
-                emoji = PHASE_VISUALS.get(phase, ' ')
-                line += f"{emoji}{day:2d}  "
-            else:
-                line += f" {day:2d}  "
+            day_display = _format_calendar_day(cycles, date, day)
+            line += day_display
         
         line += " " * (55 - len(line) + 2) + "│"
         print(line)
@@ -238,16 +255,32 @@ def _render_calendar_body(cycles: List[Cycle], month_cal, target_year: int, targ
     print(f"╰{'─' * 56}╯")
 
 
+def _format_calendar_day(cycles: List[Cycle], date: datetime.date, day: int) -> str:
+    """Format a single calendar day with phase indicator (business logic)"""
+    phase, _ = predict_phase_on_date(cycles, date)
+    
+    if phase:
+        emoji = PHASE_VISUALS.get(phase, ' ')
+        return f"{emoji}{day:2d}  "
+    
+    return f" {day:2d}  "
+
+
 def _render_calendar_footer(cycles: List[Cycle]):
     """Render calendar footer with legend and notes"""
     print("\nLegend: ◯ Menstrual  ◔ Follicular  ◕ Luteal")
     
-    outliers = [c for c in cycles if c.is_outlier]
-    if outliers:
-        print(f"Note: {len(outliers)} outlier cycle(s) excluded from predictions")
-    else:
-        print("Note: Future dates are estimates based on average cycle length")
+    outlier_count = sum(1 for c in cycles if c.is_outlier)
+    footer_note = _get_calendar_footer_note(outlier_count)
+    print(footer_note)
     print()
+
+
+def _get_calendar_footer_note(outlier_count: int) -> str:
+    """Determine appropriate footer note (business logic)"""
+    if outlier_count > 0:
+        return f"Note: {outlier_count} outlier cycle(s) excluded from predictions"
+    return "Note: Future dates are estimates based on average cycle length"
 
 
 def show_prediction(cycles: List[Cycle]):

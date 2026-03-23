@@ -65,7 +65,7 @@ def get_current_phase(cycles, today=None) -> Tuple[Optional[str], str]:
             day_label = f"Day {days_since_start + 1} of menstrual phase (avg {period_days} days)"
         return 'menstrual', day_label
     
-    if days_since_start < 14:
+    if days_since_start < DEFAULT_FOLLICULAR_PHASE_LENGTH:
         return 'follicular', f"Day {days_since_start + 1} of cycle"
     
     return 'luteal', f"Day {days_since_start + 1} of cycle"
