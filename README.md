@@ -16,15 +16,12 @@ cycle-tracker start
 # 3. Mark when bleeding stops (optional but recommended)
 cycle-tracker end-period
 
-# 4. Check status anytime
-cycle-tracker status
-
-# 5. End cycle when next period starts
-cycle-tracker end
-cycle-tracker start  # Start the new cycle
+# 4. When next period starts, just run 'start' again
+#    (it will automatically end the previous cycle)
+cycle-tracker start
 ```
 
-**Important:** Don't end the cycle when your period ends! Wait until your next period starts.
+**Key:** Just use `start` each time your period begins. No need for separate `end` command!
 
 See [detailed usage](#usage) below.
 
@@ -32,11 +29,15 @@ See [detailed usage](#usage) below.
 
 ### 🩸 Cycle Tracking
 - Track phases: menstrual, follicular, luteal
+- **Auto-complete previous cycle** when you start a new one
+- **Period end tracking** (bleeding vs full cycle)
 - **Prediction ranges** (not just averages!)
 - **Confidence intervals** (68% confidence)
 - **Quality scores** (0-100)
 - Daily updated predictions
 - Luteal phase insights
+- **Calendar view** with phase predictions
+- **Future date predictions** (what phase will I be in on X date?)
 
 ### 🌙 Moon Phase (Optional)
 - Check current moon phase
@@ -99,6 +100,7 @@ See [detailed usage](#usage) below.
 cycle-tracker setup
 
 # Start a new cycle (when period/bleeding begins)
+# This automatically ends the previous cycle!
 cycle-tracker start
 
 # Mark when bleeding stops (optional but recommended)
@@ -108,14 +110,23 @@ cycle-tracker end-period
 cycle-tracker              # Quick: menstrual/follicular/luteal
 cycle-tracker status       # Detailed with statistics
 
-# End cycle when NEXT period starts (not when bleeding stops!)
-cycle-tracker end
-
 # Predict next cycle
 cycle-tracker predict
+
+# Check phase on a specific date
+cycle-tracker on 9 May 2026
+cycle-tracker on 2026-05-09
+
+# View calendar with predictions
+cycle-tracker calendar     # This month
+cycle-tracker calendar 1   # Next month
+cycle-tracker calendar 2   # Two months ahead
+
+# Get help
+cycle-tracker help
 ```
 
-**Key Concept:** A menstrual cycle runs from the first day of one period to the day before the next period starts (typically 21-35 days). Don't confuse this with your period length (typically 4-7 days).
+**Simplified workflow:** Just use `cycle-tracker start` each time your period begins. It will automatically complete the previous cycle!
 
 ### What You Get
 

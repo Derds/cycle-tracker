@@ -360,22 +360,208 @@ def check_cycle_due(today, cycles):
         return f"Next cycle is {days_diff} days overdue (expected {expected_start.strftime('%Y-%m-%d')})"
 
 def start_cycle(menstrual_days=None):
-    """Start a new cycle"""
+    """Start a new cycle - automatically ends previous cycle if needed"""
     today = datetime.now().date()
     cycles = load_cycles()
     
-    # Check if there's an ongoing cycle
+    # Check if there's an ongoing cycle - auto-end it
     if cycles and not cycles[-1]['end_date']:
-        print(f"Warning: Current cycle started on {cycles[-1]['start_date'].strftime('%Y-%m-%d')} is not ended.")
-        print("Automatically ending previous cycle.")
+        prev_start = cycles[-1]['start_date']
+        print(f"Previous cycle from {prev_start.strftime('%Y-%m-%d')} automatically ended.")
         update_last_cycle_end(today - timedelta(days=1))
+        cycle_length = (today - timedelta(days=1) - prev_start).days + 1
+        print(f"That cycle was {cycle_length} days long.\n")
     
     if menstrual_days is None:
         menstrual_days = calculate_average_menstrual_days(cycles) if cycles else DEFAULT_MENSTRUAL_DAYS
     
     save_cycle(today, menstrual_days=menstrual_days)
     print(f"New cycle started on {today.strftime('%Y-%m-%d')}")
-    print(f"Menstrual phase: {menstrual_days} days (ends around {(today + timedelta(days=menstrual_days-1)).strftime('%Y-%m-%d')})")
+    print(f"Expected period length: ~{menstrual_days} days (ends around {(today + timedelta(days=menstrual_days-1)).strftime('%Y-%m-%d')})")
+
+def predict_phase_on_date(target_date):
+    """Predict what phase you'll be in on a specific future date"""
+    cycles = load_cycles()
+    if not cycles:
+        return None, "No cycle data available. Start tracking first."
+    
+    current_cycle = cycles[-1]
+    today = datetime.now().date()
+    
+    # If target date is in the past or today, use actual data
+    if target_date <= today and not current_cycle['end_date']:
+        return get_current_phase(target_date)
+    
+    # If target date is during current ongoing cycle
+    if not current_cycle['end_date'] and target_date > current_cycle['start_date']:
+        days_into_cycle = (target_date - current_cycle['start_date']).days
+        menstrual_days = current_cycle['menstrual_days']
+        
+        if days_into_cycle < menstrual_days:
+            return 'menstrual', f"Day {days_into_cycle + 1} of menstrual phase"
+        elif days_into_cycle < 14:
+            return 'follicular', f"Day {days_into_cycle + 1} of cycle"
+        else:
+            return 'luteal', f"Day {days_into_cycle + 1} of cycle"
+    
+    # For future predictions, estimate based on average cycle
+    completed = [c for c in cycles if c['end_date']]
+    if len(completed) < 1:
+        return None, "Need at least 1 completed cycle for future predictions."
+    
+    mean_cycle, std_dev = calculate_cycle_statistics(cycles)
+    
+    # Find which cycle the target date falls into
+    # Start from the last known cycle end or estimated end
+    if current_cycle['end_date']:
+        estimate_start = current_cycle['end_date'] + timedelta(days=1)
+    else:
+        # Current cycle ongoing, estimate when it will end
+        estimate_start = current_cycle['start_date'] + timedelta(days=int(mean_cycle))
+    
+    # Keep adding cycles until we reach the target date
+    while estimate_start + timedelta(days=int(mean_cycle)) < target_date:
+        estimate_start += timedelta(days=int(mean_cycle))
+    
+    # Now estimate_start is the likely start of the cycle containing target_date
+    days_into_estimated_cycle = (target_date - estimate_start).days
+    
+    avg_menstrual = calculate_average_menstrual_days(cycles)
+    
+    if days_into_estimated_cycle < 0:
+        # Target is between cycles
+        return None, f"Between cycles (next cycle expected ~{estimate_start.strftime('%Y-%m-%d')})"
+    elif days_into_estimated_cycle < avg_menstrual:
+        return 'menstrual', f"Likely day {days_into_estimated_cycle + 1} of menstrual phase (estimated)"
+    elif days_into_estimated_cycle < 14:
+        return 'follicular', f"Likely day {days_into_estimated_cycle + 1} of cycle (estimated)"
+    else:
+        return 'luteal', f"Likely day {days_into_estimated_cycle + 1} of cycle (estimated)"
+
+def show_calendar_view(month_offset=0):
+    """Show ASCII calendar view for the current or future month"""
+    import calendar as cal
+    
+    today = datetime.now().date()
+    target_month = today.month + month_offset
+    target_year = today.year
+    
+    # Handle year overflow
+    while target_month > 12:
+        target_month -= 12
+        target_year += 1
+    while target_month < 1:
+        target_month += 12
+        target_year -= 1
+    
+    # Get calendar
+    month_cal = cal.monthcalendar(target_year, target_month)
+    month_name = cal.month_name[target_month]
+    
+    cycles = load_cycles()
+    
+    print(f"\n╭{'─' * 56}╮")
+    print(f"│  {month_name} {target_year} - Cycle Calendar{' ' * (56 - len(f'{month_name} {target_year} - Cycle Calendar') - 2)}│")
+    print(f"├{'─' * 56}┤")
+    print("│  Mon  Tue  Wed  Thu  Fri  Sat  Sun                  │")
+    print(f"├{'─' * 56}┤")
+    
+    for week in month_cal:
+        line = "│  "
+        for day in week:
+            if day == 0:
+                line += "     "
+            else:
+                date = datetime(target_year, target_month, day).date()
+                phase, _ = predict_phase_on_date(date)
+                
+                if phase:
+                    emoji = PHASE_VISUALS.get(phase, ' ')
+                    line += f"{emoji}{day:2d}  "
+                elif date < today:
+                    line += f" {day:2d}  "
+                else:
+                    line += f" {day:2d}  "
+        
+        line += " " * (55 - len(line) + 2) + "│"
+        print(line)
+    
+    print(f"╰{'─' * 56}╯")
+    print("\nLegend: ◯ Menstrual  ◔ Follicular  ◕ Luteal")
+    print("Note: Future dates are estimates based on average cycle length\n")
+
+def print_help():
+    """Print comprehensive help text"""
+    print("╭────────────────────────────────────────────────────────╮")
+    print("│  CYCLE TRACKER - Help & Usage Guide                   │")
+    print("╰────────────────────────────────────────────────────────╯\n")
+    
+    print("━━━ Basic Commands ━━━\n")
+    print("  cycle-tracker setup")
+    print("    Initialize data file (first time only)\n")
+    
+    print("  cycle-tracker start [menstrual_days]")
+    print("    Start a new cycle when your period begins")
+    print("    Automatically ends previous cycle if needed")
+    print("    Optional: Specify expected period length in days\n")
+    
+    print("  cycle-tracker end-period")
+    print("    Mark when bleeding stops (optional but recommended)")
+    print("    Tracks actual period length\n")
+    
+    print("  cycle-tracker")
+    print("  cycle-tracker cycle-phase")
+    print("    Get current phase: menstrual, follicular, or luteal\n")
+    
+    print("  cycle-tracker status")
+    print("    Detailed view with statistics and predictions")
+    print("    Shows: phase, period length, cycle stats, quality score\n")
+    
+    print("  cycle-tracker predict")
+    print("    Predict next cycle with confidence ranges\n")
+    
+    print("  cycle-tracker on <date>")
+    print("    Predict phase on a future date")
+    print("    Examples: 'cycle-tracker on 2026-05-09'")
+    print("              'cycle-tracker on 9 May 2026'\n")
+    
+    print("  cycle-tracker calendar [month_offset]")
+    print("    Show calendar view with predicted phases")
+    print("    Examples: 'cycle-tracker calendar' (this month)")
+    print("              'cycle-tracker calendar 1' (next month)\n")
+    
+    print("━━━ Key Concepts ━━━\n")
+    print("  Period vs Cycle:")
+    print("    • Period = bleeding days (typically 4-7 days)")
+    print("    • Cycle = first day of period to day before next period")
+    print("    • Full cycle is typically 21-35 days\n")
+    
+    print("  When to use 'start':")
+    print("    • When your period begins (first day of bleeding)")
+    print("    • It will auto-end the previous cycle\n")
+    
+    print("  When to use 'end-period':")
+    print("    • When bleeding stops (optional)")
+    print("    • Helps track actual vs estimated period length\n")
+    
+    print("━━━ Understanding Output ━━━\n")
+    print("  Phases:")
+    print("    ◯ Menstrual - Days 1-5/6 (bleeding)")
+    print("    ◔ Follicular - Days 6-14 (post-period, pre-ovulation)")
+    print("    ◕ Luteal - Days 14-28 (post-ovulation, pre-period)\n")
+    
+    print("  Statistics:")
+    print("    • '27 ± 0.8 days' = average 27 days, varies by ±0.8")
+    print("    • '68% confidence' = prediction range covers 68% probability")
+    print("    • Quality score: 🟢 80+ / 🟡 60-79 / 🔴 <60\n")
+    
+    print("━━━ Data & Privacy ━━━\n")
+    print("  • All data stored locally in .cycle_tracker_data.csv")
+    print("  • No cloud sync, no accounts, no tracking")
+    print("  • Your data never leaves your device\n")
+    
+    print("For more information, see the documentation:")
+    print("  README.md, CITATIONS.md, NEXT_STEPS.md")
 
 def end_cycle():
     """End the current cycle"""
@@ -554,19 +740,67 @@ def main():
             print("No active cycle")
             print(info)
     
+    elif command == "on":
+        # Predict phase on a specific date
+        if len(sys.argv) < 3:
+            print("Error: Please specify a date")
+            print("Examples: cycle-tracker on 2026-05-09")
+            print("          cycle-tracker on 9 May 2026")
+            sys.exit(1)
+        
+        date_str = ' '.join(sys.argv[2:])
+        
+        # Try parsing different formats
+        target_date = None
+        for fmt in ['%Y-%m-%d', '%d %B %Y', '%d %b %Y', '%B %d %Y', '%b %d %Y']:
+            try:
+                target_date = datetime.strptime(date_str, fmt).date()
+                break
+            except ValueError:
+                continue
+        
+        if not target_date:
+            print(f"Error: Could not parse date '{date_str}'")
+            print("Try formats like: 2026-05-09, 9 May 2026, May 9 2026")
+            sys.exit(1)
+        
+        phase, info = predict_phase_on_date(target_date)
+        if phase:
+            visual = PHASE_VISUALS.get(phase, '')
+            print(f"\nOn {target_date.strftime('%A, %d %B %Y')}:")
+            print(f"  {visual} {phase.upper()}")
+            print(f"  {info}\n")
+        else:
+            print(f"\nOn {target_date.strftime('%A, %d %B %Y')}:")
+            print(f"  {info}\n")
+    
+    elif command == "calendar":
+        # Show calendar view
+        month_offset = 0
+        if len(sys.argv) > 2:
+            try:
+                month_offset = int(sys.argv[2])
+            except ValueError:
+                print("Error: Month offset must be a number")
+                sys.exit(1)
+        show_calendar_view(month_offset)
+    
+    elif command in ["help", "--help", "-h"]:
+        print_help()
+    
     else:
-        print("Cycle Tracker Usage:")
-        print("  cycle-tracker setup                   - Initialize data file")
-        print("  cycle-tracker start [menstrual_days]  - Start a new cycle")
-        print("  cycle-tracker end-period              - Mark when period (bleeding) ends")
-        print("  cycle-tracker end                     - End current cycle (when next period starts)")
-        print("  cycle-tracker cycle-phase             - Get current phase (menstrual/follicular/luteal)")
-        print("  cycle-tracker status                  - Show detailed status with predictions")
-        print("  cycle-tracker predict                 - Predict next cycle with confidence ranges")
-        print("")
-        print("Default command (no arguments): cycle-phase")
-        print("")
-        print("Note: A full cycle = from first day of period to day before next period (21-35 days)")
+        print("Cycle Tracker - Quick Help")
+        print()
+        print("Commands:")
+        print("  cycle-tracker start          - Start new cycle (auto-ends previous)")
+        print("  cycle-tracker end-period     - Mark when bleeding stops")  
+        print("  cycle-tracker status         - Show detailed stats")
+        print("  cycle-tracker predict        - Predict next cycle")
+        print("  cycle-tracker on <date>      - Predict phase on specific date")
+        print("  cycle-tracker calendar [+N]  - Show calendar view (N months ahead)")
+        print("  cycle-tracker help           - Show detailed help")
+        print()
+        print("Run 'cycle-tracker help' for full documentation")
 
 if __name__ == "__main__":
     main()
