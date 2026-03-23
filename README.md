@@ -39,7 +39,7 @@ That's it! See [detailed usage](#usage) below.
 
 ### 🩸🌙 Combined Analysis (Optional)
 - View both cycles together
-- Analyze correlations
+- Analyse correlations
 - Pattern detection
 
 **All optional!** The cycle tracker works completely independently.
@@ -153,8 +153,8 @@ See [MOON_PHASE.md](MOON_PHASE.md) for details.
 # View both cycles together
 cycle-moon
 
-# Analyze correlations (requires 2+ completed cycles)
-cycle-moon analyze
+# Analyse correlations (requires 2+ completed cycles)
+cycle-moon analyse
 ```
 
 See [CYCLE_MOON.md](CYCLE_MOON.md) for details.

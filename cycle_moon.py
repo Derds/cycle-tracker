@@ -3,7 +3,7 @@
 Combined Cycle & Moon Phase Tracker
 
 Shows both menstrual cycle phase and moon phase in a single view.
-Analyzes correlations between cycle phases and moon phases over time.
+Analyses correlations between cycle phases and moon phases over time.
 
 This is an optional add-on - the main cycle tracker works independently.
 """
@@ -68,9 +68,9 @@ def get_combined_visual():
     
     return '\n'.join(lines)
 
-def analyze_cycle_moon_correlation():
+def analyse_cycle_moon_correlation():
     """
-    Analyze correlation between cycle phases and moon phases.
+    Analyse correlation between cycle phases and moon phases.
     
     Shows which moon phases you're typically in during each cycle phase.
     """
@@ -91,7 +91,7 @@ def analyze_cycle_moon_correlation():
         'luteal': 0
     }
     
-    # Analyze each completed cycle
+    # Analyse each completed cycle
     for cycle in cycles:
         if not cycle['end_date']:
             continue
@@ -99,37 +99,48 @@ def analyze_cycle_moon_correlation():
         start = cycle['start_date']
         end = cycle['end_date']
         menstrual_days = cycle['menstrual_days']
-        cycle_length = (end - start).days
+        cycle_length = (end - start).days + 1  # Include the end day
         
-        # Menstrual phase
+        # Skip cycles that are too short (probably data entry errors)
+        if cycle_length < 10:
+            continue
+        
+        # Menstrual phase (first N days)
         for day in range(menstrual_days):
+            if day >= cycle_length:
+                break
             date = start + timedelta(days=day)
             moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
             moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
             correlations['menstrual'][moon_key] += 1
             total_days['menstrual'] += 1
         
-        # Follicular phase (menstrual to day 14)
-        for day in range(menstrual_days, min(14, cycle_length)):
+        # Follicular phase (after menstrual up to day 14)
+        # Note: Follicular includes menstrual in medical terms, but we separate them here
+        follicular_start = menstrual_days
+        follicular_end = min(14, cycle_length)
+        for day in range(follicular_start, follicular_end):
             date = start + timedelta(days=day)
             moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
             moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
             correlations['follicular'][moon_key] += 1
             total_days['follicular'] += 1
         
-        # Luteal phase (day 14 onwards)
-        for day in range(14, cycle_length):
-            date = start + timedelta(days=day)
-            moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
-            moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
-            correlations['luteal'][moon_key] += 1
-            total_days['luteal'] += 1
+        # Luteal phase (day 14 onwards to end of cycle)
+        luteal_start = 14
+        if luteal_start < cycle_length:
+            for day in range(luteal_start, cycle_length):
+                date = start + timedelta(days=day)
+                moon_pos = moon_phase.calculate_moon_phase(datetime.combine(date, datetime.min.time()))
+                moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
+                correlations['luteal'][moon_key] += 1
+                total_days['luteal'] += 1
     
     return correlations, total_days
 
 def print_correlation_analysis():
     """Print detailed correlation analysis"""
-    result = analyze_cycle_moon_correlation()
+    result = analyse_cycle_moon_correlation()
     
     if not result:
         print("Need at least 2 completed cycles for correlation analysis.")
@@ -141,10 +152,24 @@ def print_correlation_analysis():
     print("│  🔍 CYCLE & MOON CORRELATION ANALYSIS                  │")
     print("╰────────────────────────────────────────────────────────╯\n")
     
-    # Summary of analyzed cycles
+    # Summary of analysed cycles
     cycles = cycle_tracker.load_cycles()
     completed = [c for c in cycles if c['end_date']]
-    print(f"Analyzed {len(completed)} completed cycles\n")
+    # Count valid cycles (longer than 10 days)
+    valid_cycles = [c for c in completed if (c['end_date'] - c['start_date']).days + 1 >= 10]
+    
+    if not valid_cycles:
+        print("⚠️  No valid cycles found (cycles must be at least 10 days)")
+        print("    Your data shows very short cycles (5-7 days)")
+        print("    This might be tracking just your period, not the full menstrual cycle")
+        print("\nTip: The full menstrual cycle should be:")
+        print("  - From the first day of one period to the first day of the next period")
+        print("  - Typically 21-35 days long")
+        print("\nYour cycles appear to be ending too soon.")
+        return
+    
+    print(f"Analysed {len(valid_cycles)} completed cycles")
+    print(f"(Skipped {len(completed) - len(valid_cycles)} very short cycles)\n")
     
     # For each cycle phase, show most common moon phases
     for cycle_phase in ['menstrual', 'follicular', 'luteal']:
@@ -152,7 +177,7 @@ def print_correlation_analysis():
             continue
         
         print(f"━━━ During {cycle_phase.upper()} phase ━━━")
-        print(f"Total days analyzed: {total_days[cycle_phase]}\n")
+        print(f"Total days analysed: {total_days[cycle_phase]}\n")
         
         # Calculate percentages
         phase_counts = correlations[cycle_phase]
@@ -214,14 +239,14 @@ def print_simple_view():
     # Add quick stats if we have data
     cycles = cycle_tracker.load_cycles()
     if cycles and len([c for c in cycles if c['end_date']]) >= 2:
-        print("Run 'cycle-moon analyze' for correlation analysis")
+        print("Run 'cycle-moon analyse' for correlation analysis")
 
 def main():
     """Main entry point"""
     if len(sys.argv) > 1:
         command = sys.argv[1]
         
-        if command == 'analyze':
+        if command == 'analyse' or command == 'analyze':  # Accept both spellings
             print_simple_view()
             print_correlation_analysis()
         elif command in ['--help', '-h']:
@@ -229,10 +254,10 @@ def main():
             print()
             print("Usage:")
             print("  cycle-moon           - Show current cycle and moon phase")
-            print("  cycle-moon analyze   - Show correlation analysis")
+            print("  cycle-moon analyse   - Show correlation analysis")
             print()
             print("This tool combines data from cycle-tracker and moon-phase")
-            print("to show both phases together and analyze patterns.")
+            print("to show both phases together and analyse patterns.")
         else:
             print(f"Unknown command: {command}")
             print("Use 'cycle-moon --help' for usage information")

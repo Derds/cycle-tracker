@@ -1,6 +1,6 @@
 # Combined Cycle & Moon Tracker
 
-An optional tool that shows both your menstrual cycle phase and moon phase together, plus analyzes correlations between them.
+An optional tool that shows both your menstrual cycle phase and moon phase together, plus analyses correlations between them.
 
 ## Features
 
@@ -38,14 +38,14 @@ Example output:
 ### Correlation Analysis
 
 ```bash
-cycle-moon analyze
+cycle-moon analyse
 ```
 
-Analyzes your historical data to show:
+Analyses your historical data to show:
 - Which moon phases occur most during each cycle phase
 - Percentage breakdown for menstrual, follicular, and luteal phases
 - Any interesting patterns (e.g., "period often starts around full moon")
-- Number of cycles analyzed
+- Number of cycles analysed
 
 Example output:
 ```
@@ -53,24 +53,24 @@ Example output:
 │  🔍 CYCLE & MOON CORRELATION ANALYSIS                  │
 ╰────────────────────────────────────────────────────────╯
 
-Analyzed 4 completed cycles
+Analysed 4 completed cycles
 
 ━━━ During MENSTRUAL phase ━━━
-Total days analyzed: 19
+Total days analysed: 19
 
   🌔 Waxing Gibbous        78.9% (15 days)
   🌓 First Quarter         15.8% (3 days)
   🌕 Full Moon              5.3% (1 days)
 
 ━━━ During FOLLICULAR phase ━━━
-Total days analyzed: 37
+Total days analysed: 37
 
   🌖 Waning Gibbous        56.8% (21 days)
   🌕 Full Moon             16.2% (6 days)
   🌔 Waxing Gibbous        16.2% (6 days)
 
 ━━━ During LUTEAL phase ━━━
-Total days analyzed: 52
+Total days analysed: 52
 
   🌘 Waning Crescent       40.4% (21 days)
   🌒 Waxing Crescent       32.7% (17 days)
@@ -89,6 +89,21 @@ Total days analyzed: 52
 
 - At least 2 completed cycles for correlation analysis
 - Both `cycle-tracker` and `moon-phase` tools installed
+- **Important**: Cycles must track the full menstrual cycle (not just your period!)
+
+### What is a Full Cycle?
+
+A menstrual cycle is counted from:
+- **Day 1**: First day of your period (bleeding starts)
+- **End**: The day BEFORE your next period starts
+
+**Example:**
+- Period starts: June 1st → `cycle-tracker start`
+- Period ends: June 6th (but don't end the cycle yet!)
+- Next period starts: June 29th → `cycle-tracker end` then `cycle-tracker start`
+- This cycle was 28 days long (June 1 to June 28)
+
+**Common mistake:** Ending the cycle when your period ends (5-7 days) instead of when the next one starts. This makes analysis impossible because the follicular and luteal phases are missing!
 
 ## How It Works
 
