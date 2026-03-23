@@ -34,6 +34,11 @@ export PATH="$PATH:/path/to/cycle-tracker"
 
 ## Usage
 
+### Initialize data file (first time setup)
+```bash
+cycle-tracker setup
+```
+
 ### Start a new cycle
 ```bash
 cycle-tracker start
@@ -89,10 +94,12 @@ cycle-tracker status
 
 ### Data Storage
 
-Cycle data is stored in `~/.cycle_tracker_data.csv` with the following fields:
+Cycle data is stored in `.cycle_tracker_data.csv` in the same directory as the script with the following fields:
 - `start_date`: When the cycle began
 - `end_date`: When the cycle ended (empty if ongoing)
 - `menstrual_days`: Length of menstrual phase for this cycle
+
+Run `cycle-tracker setup` to initialize the data file if needed.
 
 ### Cycle Tracking Logic
 
@@ -114,6 +121,10 @@ The tracker informs you:
 ## Example Workflow
 
 ```bash
+# Initialize the data file (first time only)
+$ cycle-tracker setup
+✓ Data file created at: /path/to/cycle-tracker/.cycle_tracker_data.csv
+
 # Start tracking your first cycle
 $ cycle-tracker start
 New cycle started on 2026-03-23
@@ -125,9 +136,12 @@ $ cycle-tracker cycle-phase
 
 # Get detailed status
 $ cycle-tracker status
-◯  Current phase: menstrual
-Day 1 of menstrual phase (typically 5 days)
-Menstrual phase will end in 4 day(s) (2026-03-27)
+╭─────────────────────────────────────────────────╮
+│  ◯  Current Phase: MENSTRUAL                    │
+│                                                 │
+│  Day 1 of menstrual phase (typically 5 days)    │
+│  Menstrual phase ends in 4 day(s) (2026-03-27)  │
+╰─────────────────────────────────────────────────╯
 
 # End the cycle when it completes
 $ cycle-tracker end
@@ -142,6 +156,19 @@ Menstrual phase: 5 days (ends around 2026-04-25)
 
 ## Future Features (Planned)
 
-- Testing with historical data
 - Future cycle predictions
 - Moon phase correlation
+
+## Testing
+
+Run the test suite to verify cycle length predictions:
+
+```bash
+python3 test_cycle_tracker.py
+```
+
+The tests verify:
+- Average cycle length calculation from historical data
+- Cycle prediction accuracy (e.g., 26-day average → 26-day predictions)
+- Menstrual phase length calculations
+- Default values when no historical data exists

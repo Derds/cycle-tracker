@@ -8,7 +8,9 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-DATA_FILE = Path.home() / ".cycle_tracker_data.csv"
+# Get the directory where the script is located
+SCRIPT_DIR = Path(__file__).parent.resolve()
+DATA_FILE = SCRIPT_DIR / ".cycle_tracker_data.csv"
 DEFAULT_MENSTRUAL_DAYS = 5
 DEFAULT_CYCLE_LENGTH = 28
 
@@ -18,6 +20,32 @@ PHASE_VISUALS = {
     'luteal': '◕',         # Three-quarters filled
     'complete': '●'        # Full circle
 }
+
+def print_box(lines):
+    """Print text in a nice box"""
+    if not lines:
+        return
+    
+    max_width = max(len(line) for line in lines)
+    border_width = max_width + 4
+    
+    print("╭" + "─" * border_width + "╮")
+    for line in lines:
+        padding = max_width - len(line)
+        print(f"│  {line}{' ' * padding}  │")
+    print("╰" + "─" * border_width + "╯")
+
+def setup_data_file():
+    """Initialize the data file if it doesn't exist"""
+    if not DATA_FILE.exists():
+        with open(DATA_FILE, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days'])
+            writer.writeheader()
+        print(f"✓ Data file created at: {DATA_FILE}")
+        return True
+    else:
+        print(f"✓ Data file already exists at: {DATA_FILE}")
+        return False
 
 def load_cycles():
     """Load cycle data from CSV file"""
@@ -188,21 +216,25 @@ def show_status():
     
     if phase:
         visual = PHASE_VISUALS.get(phase, '')
-        print(f"{visual}  Current phase: {phase}")
-        print(info)
-        
-        # Show when menstrual phase will end
         current_cycle = cycles[-1]
         avg_menstrual_days = calculate_average_menstrual_days(cycles)
         menstrual_days = current_cycle.get('menstrual_days', avg_menstrual_days)
         menstrual_end = current_cycle['start_date'] + timedelta(days=menstrual_days - 1)
         
+        lines = [
+            f"{visual}  Current Phase: {phase.upper()}",
+            "",
+            info
+        ]
+        
         if today <= menstrual_end:
             days_left = (menstrual_end - today).days
             if days_left == 0:
-                print(f"Menstrual phase ends today ({menstrual_end.strftime('%Y-%m-%d')})")
+                lines.append(f"Menstrual phase ends today ({menstrual_end.strftime('%Y-%m-%d')})")
             else:
-                print(f"Menstrual phase will end in {days_left} day(s) ({menstrual_end.strftime('%Y-%m-%d')})")
+                lines.append(f"Menstrual phase ends in {days_left} day(s) ({menstrual_end.strftime('%Y-%m-%d')})")
+        
+        print_box(lines)
     else:
         print(info)
 
@@ -212,7 +244,10 @@ def main():
     else:
         command = sys.argv[1]
     
-    if command == "start":
+    if command == "setup":
+        setup_data_file()
+    
+    elif command == "start":
         menstrual_days = None
         if len(sys.argv) > 2:
             try:
@@ -239,6 +274,7 @@ def main():
     
     else:
         print("Cycle Tracker Usage:")
+        print("  cycle-tracker setup                   - Initialize data file")
         print("  cycle-tracker start [menstrual_days]  - Start a new cycle")
         print("  cycle-tracker end                     - End current cycle")
         print("  cycle-tracker cycle-phase             - Get current phase (menstrual/follicular/luteal)")
