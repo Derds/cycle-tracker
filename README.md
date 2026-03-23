@@ -1,6 +1,6 @@
 # Cycle Tracker
 
-A command-line menstrual cycle phase tracking tool.
+A command-line menstrual cycle phase tracking tool for girls who hate their data being stolen for advertising ✨🩸
 
 ## Features
 
