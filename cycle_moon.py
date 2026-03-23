@@ -17,7 +17,10 @@ from collections import defaultdict
 SCRIPT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(SCRIPT_DIR))
 
-import cycle_tracker
+# Import modular components
+from data_manager import load_cycles
+from predictions import get_current_phase
+from statistics import get_valid_cycles
 import moon_phase
 
 def get_combined_visual():
@@ -25,9 +28,9 @@ def get_combined_visual():
     today = datetime.now().date()
     
     # Get cycle info
-    cycles = cycle_tracker.load_cycles()
+    cycles = load_cycles()
     if cycles:
-        cycle_phase, cycle_info = cycle_tracker.get_current_phase(today)
+        cycle_phase, cycle_info = get_current_phase(cycles, today)
     else:
         cycle_phase = None
         cycle_info = "No cycle data"
@@ -40,7 +43,8 @@ def get_combined_visual():
     
     # Get cycle visual
     if cycle_phase:
-        cycle_emoji = cycle_tracker.PHASE_VISUALS.get(cycle_phase, '○')
+        from display import PHASE_VISUALS
+        cycle_emoji = PHASE_VISUALS.get(cycle_phase, '○')
         cycle_display = f"{cycle_emoji} {cycle_phase.upper()}"
     else:
         cycle_emoji = '○'
@@ -74,7 +78,7 @@ def analyse_cycle_moon_correlation():
     
     Shows which moon phases you're typically in during each cycle phase.
     """
-    cycles = cycle_tracker.load_cycles()
+    cycles = load_cycles()
     if not cycles or len(cycles) < 2:
         return None
     
@@ -93,20 +97,20 @@ def analyse_cycle_moon_correlation():
     
     # Analyse each completed cycle
     for cycle in cycles:
-        if not cycle['end_date']:
+        if not cycle.is_complete:
             continue
         
-        start = cycle['start_date']
-        end = cycle['end_date']
-        menstrual_days = cycle['menstrual_days']
-        cycle_length = (end - start).days + 1  # Include the end day
+        start = cycle.start_date
+        end = cycle.end_date
+        period_days = cycle.period_length or 5
+        cycle_length = cycle.cycle_length
         
-        # Skip cycles that are too short (probably data entry errors)
-        if cycle_length < 10:
+        # Skip outliers
+        if cycle.is_outlier:
             continue
         
         # Menstrual phase (first N days)
-        for day in range(menstrual_days):
+        for day in range(period_days):
             if day >= cycle_length:
                 break
             date = start + timedelta(days=day)
@@ -116,8 +120,7 @@ def analyse_cycle_moon_correlation():
             total_days['menstrual'] += 1
         
         # Follicular phase (after menstrual up to day 14)
-        # Note: Follicular includes menstrual in medical terms, but we separate them here
-        follicular_start = menstrual_days
+        follicular_start = period_days
         follicular_end = min(14, cycle_length)
         for day in range(follicular_start, follicular_end):
             date = start + timedelta(days=day)
@@ -153,23 +156,15 @@ def print_correlation_analysis():
     print("╰────────────────────────────────────────────────────────╯\n")
     
     # Summary of analysed cycles
-    cycles = cycle_tracker.load_cycles()
-    completed = [c for c in cycles if c['end_date']]
-    # Count valid cycles (longer than 10 days)
-    valid_cycles = [c for c in completed if (c['end_date'] - c['start_date']).days + 1 >= 10]
+    cycles = load_cycles()
+    valid_cycles = get_valid_cycles(cycles, exclude_outliers=True)
     
     if not valid_cycles:
-        print("⚠️  No valid cycles found (cycles must be at least 10 days)")
-        print("    Your data shows very short cycles (5-7 days)")
-        print("    This might be tracking just your period, not the full menstrual cycle")
-        print("\nTip: The full menstrual cycle should be:")
-        print("  - From the first day of one period to the first day of the next period")
-        print("  - Typically 21-35 days long")
-        print("\nYour cycles appear to be ending too soon.")
+        print("⚠️  No valid cycles found for analysis")
+        print("    Need at least 2 completed cycles between 18-45 days")
         return
     
-    print(f"Analysed {len(valid_cycles)} completed cycles")
-    print(f"(Skipped {len(completed) - len(valid_cycles)} very short cycles)\n")
+    print(f"Analysed {len(valid_cycles)} valid cycles\n")
     
     # For each cycle phase, show most common moon phases
     for cycle_phase in ['menstrual', 'follicular', 'luteal']:
@@ -237,8 +232,9 @@ def print_simple_view():
     print()
     
     # Add quick stats if we have data
-    cycles = cycle_tracker.load_cycles()
-    if cycles and len([c for c in cycles if c['end_date']]) >= 2:
+    cycles = load_cycles()
+    valid_cycles = get_valid_cycles(cycles, exclude_outliers=True)
+    if valid_cycles and len(valid_cycles) >= 2:
         print("Run 'cycle-moon analyse' for correlation analysis")
 
 def main():
