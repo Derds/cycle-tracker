@@ -73,16 +73,21 @@ def create_ascii_bar_chart(
     if range_val == 0:
         range_val = 1
     
+    # Get unique values that appear in the data for Y-axis
+    unique_values = sorted(set(values), reverse=True)
+    
     # Draw bars from top to bottom
     for row in range(height):
         # Y value for this row (top to bottom = high to low)
         y_threshold = max_val - (row / (height - 1)) * range_val
         
-        # Y-axis label (show scale on left)
-        if row % 3 == 0:  # Only show some labels
-            y_label_str = f"{int(y_threshold):3d}"
-        else:
-            y_label_str = "   "
+        # Y-axis label (show actual data values, not interpolated)
+        # Only show label if this row corresponds to an actual value
+        y_label_str = "   "
+        for val in unique_values:
+            if abs(y_threshold - val) < (range_val / height / 2):  # Close enough to this value
+                y_label_str = f"{val:3d}"
+                break
         
         line = f"│ {y_label_str} │ "
         
@@ -104,11 +109,14 @@ def create_ascii_bar_chart(
     # X-axis
     chart.append("├" + "─" * 5 + "┴" + "─" * (total_width - 6) + "┤")
     
-    # Date labels on bottom
+    # Date labels on bottom - show month abbreviations
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     label_line = "│     │ "
     for i, dt in enumerate(dates):
-        date_str = dt.strftime("%d/%m")[0:bar_width]  # Truncate to bar width
-        label_line += date_str.center(bar_width)
+        month_str = month_names[dt.month - 1]
+        # Center month within bar width
+        label_line += month_str.center(bar_width)
         if i < n - 1:
             label_line += " " * spacing
     label_line += " │"
