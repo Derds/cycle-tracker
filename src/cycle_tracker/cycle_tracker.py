@@ -43,6 +43,7 @@ from display import (
     show_prediction,
     PHASE_VISUALS
 )
+from graph import graph_cycle_history
 
 
 def print_help():
@@ -81,6 +82,10 @@ def print_help():
     print("  cycle-tracker calendar [+N]")
     print("    Show calendar view (N months ahead)")
     print("    Example: 'cycle-tracker calendar 1' (next month)\n")
+    
+    print("  cycle-tracker graph")
+    print("    Visualise historical trends with ASCII graphs")
+    print("    Shows cycle length and period length over time\n")
     
     print("━━━ Key Concepts ━━━\n")
     print("  Period vs Cycle:")
@@ -206,6 +211,11 @@ def main():
             cycles = load_cycles()
             show_calendar_view(cycles, month_offset)
         
+        elif command == "graph":
+            cycles = load_cycles()
+            graph = graph_cycle_history(cycles)
+            print(graph)
+        
         elif command == "cycle-phase":
             cycles = load_cycles()
             phase, info = get_current_phase(cycles)
@@ -228,6 +238,7 @@ def main():
             print("  predict        - Predict next cycle")
             print("  on <date>      - Predict phase on date")
             print("  calendar [+N]  - Show calendar (N months ahead)")
+            print("  graph          - View historical trends")
             print("  help           - Full documentation")
             print()
             print("Run 'cycle-tracker help' for details")

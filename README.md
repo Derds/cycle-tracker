@@ -38,6 +38,7 @@ See [detailed usage](#usage) below.
 - Luteal phase insights
 - **Calendar view** with phase predictions
 - **Future date predictions** (what phase will I be in on X date?)
+- **Historical trend graphs** (ASCII charts in your terminal)
 
 ### 🌙 Moon Phase (Optional)
 - Check current moon phase
@@ -155,6 +156,9 @@ cycle-tracker calendar     # This month
 cycle-tracker calendar 1   # Next month
 cycle-tracker calendar 2   # Two months ahead
 
+# View historical trends (graphs)
+cycle-tracker graph
+
 # Get help
 cycle-tracker help
 ```
@@ -212,7 +216,44 @@ cycle-moon
 cycle-moon analyse
 ```
 
-See [CYCLE_MOON.md](CYCLE_MOON.md) for details.
+See [docs/CYCLE_MOON.md](docs/CYCLE_MOON.md) for details.
+
+</details>
+
+<details>
+<summary>📊 Visualising Your Data</summary>
+
+View historical trends with ASCII graphs:
+
+```bash
+cycle-tracker graph
+```
+
+Shows:
+- **Cycle length over time** with trend line
+- **Period length over time** with trend line  
+- Summary statistics
+- Trend interpretation (stable/increasing/decreasing)
+
+Example output:
+```
+╭─────────────────────────────────────────────────╮
+│         Cycle Length Over Time                  │
+├─────────────────────────────────────────────────┤
+│  30 │          ●      ●                         │
+│  28 │      ●      ●──────●──────                │
+│  26 │  ●──────                      ●           │
+│  24 │                                   ●       │
+├─────┼─────────────────────────────────────────┤
+│      Jun 25        Oct 25        Feb 26        │
+╰─────────────────────────────────────────────────╯
+
+● Data points     ─ Trend line
+Days: 25-31 days (avg: 28.3)
+Trend: stable
+```
+
+Perfect for spotting patterns and changes over time!
 
 </details>
 
