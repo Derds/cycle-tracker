@@ -1,282 +1,225 @@
 # Cycle Tracker
 
-A command-line menstrual cycle phase tracking tool with statistical predictions.
+A privacy-first, command-line menstrual cycle tracker with statistical predictions.
 
-For girls who hate their data being stolen for advertising ✨🩸
+**For those who hate their data being stolen for advertising** ✨🩸
 
-## Features
-
-### Cycle Tracking
-- Track cycle phases: menstrual, follicular, and luteal
-- **Prediction ranges with confidence intervals** (not just averages!)
-- **Tracking quality assessment** to understand prediction accuracy
-- **Daily updated predictions** that improve as cycle progresses
-- **Luteal phase tracking** (the more stable part of your cycle)
-- User-controlled cycle start and end dates
-- CSV-based data storage for historical tracking
-- Automatic calculation of patterns from your historical data
-
-### Moon Phase Tracking 🌙
-- Check current moon phase with a single command
-- See illumination percentage and days in lunar cycle
-- Calculate days until next full or new moon
-- No internet required - uses mathematical calculations
-- Configurable location (defaults to London)
-
-### Combined Cycle & Moon View 🩸🌙 (Optional)
-- See both cycle and moon phase together
-- Analyze correlations between your cycle and moon phases
-- Discover if your cycle aligns with lunar cycles
-- Statistical breakdown by cycle phase
-- Completely optional - cycle tracker works independently
-
-See [MOON_PHASE.md](MOON_PHASE.md) for moon tracker documentation.  
-See [CYCLE_MOON.md](CYCLE_MOON.md) for combined tracker documentation.
-
-### Statistical Approach
-
-This tracker uses research-based statistical methods adapted for individual use:
-- Variance-based prediction ranges (±1 std dev = 68% confidence)
-- Tracking adherence modeling  
-- Sequential prediction updates
-- Phase-specific pattern recognition
-
-Methods inspired by Urteaga et al. (2021-2022) menstrual cycle prediction research.  
-See [CITATIONS.md](CITATIONS.md) for detailed research credits.
-
-## Installation
-
-Make the script executable:
+## Quick Start
 
 ```bash
-chmod +x cycle_tracker.py
-```
-
-Create symlinks for easy access:
-
-```bash
-# From the cycle-tracker directory
-ln -s "$(pwd)/cycle-tracker" /usr/local/bin/cycle-tracker
-ln -s "$(pwd)/moon-phase" /usr/local/bin/moon-phase
-ln -s "$(pwd)/cycle-moon" /usr/local/bin/cycle-moon
-```
-
-Or add to your PATH in `~/.zshrc` or `~/.bashrc`:
-
-```bash
-export PATH="$PATH:/path/to/cycle-tracker"
-```
-
-## Usage
-
-### Cycle Tracker Commands
-
-#### Initialize data file (first time setup)
-```bash
+# 1. Setup
 cycle-tracker setup
-```
 
-### Start a new cycle
-```bash
+# 2. Start your cycle
 cycle-tracker start
-```
 
-Start a cycle with custom menstrual phase length:
-```bash
-cycle-tracker start 4
-```
+# 3. Check your status anytime
+cycle-tracker status
 
-### Get current cycle phase
-```bash
-cycle-tracker cycle-phase
-```
-Returns: `◯ menstrual`, `◔ follicular`, or `◕ luteal`
-
-Visual indicators:
-- `◯` Empty circle = Menstrual phase
-- `◔` Quarter filled = Follicular phase  
-- `◕` Three-quarters filled = Luteal phase
-- `●` Full circle = Complete cycle
-
-This is the default command, so you can also just run:
-```bash
-cycle-tracker
-```
-
-### End current cycle
-```bash
+# 4. When cycle ends
 cycle-tracker end
 ```
 
-### Show detailed status
-```bash
-cycle-tracker status
-```
+That's it! See [detailed usage](#usage) below.
 
-Displays:
-- Current phase with visual indicator
-- Days into cycle and menstrual phase end date
-- **Cycle length statistics** (average ± variation)
-- **Predicted cycle end range** with confidence level
-- **Tracking quality score** (0-100)
-- Luteal phase length (if enough data)
+## Features
 
-### Predict next cycle
+### 🩸 Cycle Tracking
+- Track phases: menstrual, follicular, luteal
+- **Prediction ranges** (not just averages!)
+- **Confidence intervals** (68% confidence)
+- **Quality scores** (0-100)
+- Daily updated predictions
+- Luteal phase insights
+
+### 🌙 Moon Phase (Optional)
+- Check current moon phase
+- Days until next full/new moon
+- No internet required
+
+### 🩸🌙 Combined Analysis (Optional)
+- View both cycles together
+- Analyze correlations
+- Pattern detection
+
+**All optional!** The cycle tracker works completely independently.
+
+## Installation
+
+<details>
+<summary>📦 Click to expand installation instructions</summary>
+
+### Requirements
+- Python 3.7+
+- macOS, Linux, or WSL
+
+### Setup
+
+1. **Make scripts executable:**
+   ```bash
+   cd cycle-tracker
+   chmod +x cycle-tracker moon-phase cycle-moon
+   ```
+
+2. **Add to PATH** (choose one):
+
+   **Option A: Link to /usr/local/bin**
+   ```bash
+   ln -s "$(pwd)/cycle-tracker" /usr/local/bin/cycle-tracker
+   ln -s "$(pwd)/moon-phase" /usr/local/bin/moon-phase
+   ln -s "$(pwd)/cycle-moon" /usr/local/bin/cycle-moon
+   ```
+
+   **Option B: Add to ~/bin**
+   ```bash
+   mkdir -p ~/bin
+   ln -s "$(pwd)/cycle-tracker" ~/bin/cycle-tracker
+   ln -s "$(pwd)/moon-phase" ~/bin/moon-phase
+   ln -s "$(pwd)/cycle-moon" ~/bin/cycle-moon
+   
+   # Add to ~/.zshrc or ~/.bashrc:
+   echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+
+</details>
+
+## Usage
+
+### Basic Commands
+
 ```bash
+# Initialize (first time only)
+cycle-tracker setup
+
+# Start a new cycle
+cycle-tracker start
+
+# Check current phase
+cycle-tracker              # Quick view: menstrual/follicular/luteal
+cycle-tracker status       # Detailed view with statistics
+
+# End current cycle
+cycle-tracker end
+
+# Predict next cycle
 cycle-tracker predict
 ```
 
-Shows prediction for the next cycle with:
-- Expected start date
-- Likely date range (68% confidence interval)
-- Based on your historical patterns
-- Luteal phase insights
+### What You Get
 
-### Moon Phase Commands 🌙
-
-#### Check current moon phase
+**Simple view:**
 ```bash
+$ cycle-tracker
+◯ menstrual
+```
+
+**Detailed view:**
+```bash
+$ cycle-tracker status
+╭──────────────────────────────────────────────────╮
+│  ◯  Current Phase: MENSTRUAL                     │
+│                                                  │
+│  Day 1 of menstrual phase (typically 5 days)     │
+│  Menstrual phase ends in 4 day(s) (2026-03-27)   │
+│                                                  │
+│  Cycle length: 27 ± 0.8 days (avg ± variation)   │
+│  Expected end: Apr 19 - Apr 19 (50% confidence)  │
+│  Tracking quality: 🟢 85/100                      │
+│  Your luteal phase: ~13 days (stable)            │
+╰──────────────────────────────────────────────────╯
+```
+
+<details>
+<summary>🌙 Moon Phase Commands (Optional)</summary>
+
+```bash
+# Check current moon phase
 moon-phase
+
+# Configure your location
+cp moon_config.json.example moon_config.json
+# Edit moon_config.json with your city coordinates
 ```
 
-Shows:
-- Current moon phase with emoji (🌑🌒🌓🌔🌕🌖🌗🌘)
-- Illumination percentage
-- Day in lunar cycle (29.5 days)
-- Days until next full or new moon
-- Your location and current time
+See [MOON_PHASE.md](MOON_PHASE.md) for details.
 
-#### Configure location
-Edit `moon_config.json`:
-```json
-{
-  "location": {
-    "name": "Your City",
-    "latitude": 51.5074,
-    "longitude": -0.1278,
-    "timezone": "Europe/London"
-  }
-}
-```
+</details>
 
-See [MOON_PHASE.md](MOON_PHASE.md) for more details.
+<details>
+<summary>🩸🌙 Combined Tracker (Optional)</summary>
 
-### Combined Cycle & Moon Commands 🩸🌙
-
-#### View both cycles together
 ```bash
+# View both cycles together
 cycle-moon
-```
 
-Shows your current menstrual cycle phase and moon phase side-by-side.
-
-#### Analyze correlations
-```bash
+# Analyze correlations (requires 2+ completed cycles)
 cycle-moon analyze
 ```
 
-Analyzes your historical data to find patterns:
-- Which moon phases occur during each cycle phase
-- Percentage breakdowns
-- Notable patterns (if any)
+See [CYCLE_MOON.md](CYCLE_MOON.md) for details.
 
-Requires at least 2 completed cycles. See [CYCLE_MOON.md](CYCLE_MOON.md) for details.
-
-**Note**: This is optional! The cycle tracker works completely independently.
+</details>
 
 ## How It Works
 
-### Cycle Phases
+### Statistical Predictions
 
-1. **Menstrual Phase**: First 4-5 days of the cycle (default 5 days, adjustable)
-   - The tracker uses historical data to calculate average menstrual phase length
-   - Can be customized when starting a new cycle
+This tracker uses research-based methods adapted for individual use:
+- **Variance modeling**: Tracks variation, not just average
+- **Confidence intervals**: Shows prediction ranges (±1 std dev = 68%)
+- **Quality assessment**: Warns when data is insufficient
+- **Sequential updates**: Predictions improve as cycle progresses
 
-2. **Follicular Phase**: Days 1-14 of the cycle
-   - Includes the menstrual phase
-   - Continues until ovulation (around day 14)
-
-3. **Luteal Phase**: Day 14 onwards
-   - From ovulation to the end of the cycle
-   - Typically lasts about 14 days
+**Research credits:** Methods inspired by [Urteaga et al. (2021-2022)](CITATIONS.md) menstrual cycle prediction research.
 
 ### Data Storage
 
-Cycle data is stored in `.cycle_tracker_data.csv` in the same directory as the script with the following fields:
-- `start_date`: When the cycle began
-- `end_date`: When the cycle ended (empty if ongoing)
-- `menstrual_days`: Length of menstrual phase for this cycle
+- Stored locally in `.cycle_tracker_data.csv` (in the script directory)
+- CSV format: `start_date, end_date, menstrual_days`
+- No cloud, no accounts, no tracking
+- Your data never leaves your device
 
-Run `cycle-tracker setup` to initialize the data file if needed.
+### Moon Calculations
 
-### Cycle Tracking Logic
+- Uses astronomical algorithms (no API calls)
+- Based on lunar cycle: 29.53059 days
+- Reference point: Jan 6, 2000 new moon
+- Accurate worldwide
 
-- The tracker will NOT start a new cycle automatically
-- User must explicitly begin each cycle with `cycle-tracker start`
-- If a cycle is not ended, the tracker assumes a default cycle length (28 days) for predictions
-- Historical data is used to:
-  - Calculate average menstrual phase length
-  - Calculate average cycle length
-  - Predict when the next cycle is due
+## Documentation
 
-### Notifications
-
-The tracker informs you:
-- If the next cycle beginning is due, overdue (>2 days late), or early
-- When the menstrual phase is expected to end
-- Current day of the cycle
-
-## Example Workflow
-
-```bash
-# Initialize the data file (first time only)
-$ cycle-tracker setup
-✓ Data file created at: /path/to/cycle-tracker/.cycle_tracker_data.csv
-
-# Start tracking your first cycle
-$ cycle-tracker start
-New cycle started on 2026-03-23
-Menstrual phase: 5 days (ends around 2026-03-27)
-
-# Check current phase
-$ cycle-tracker cycle-phase
-◯ menstrual
-
-# Get detailed status
-$ cycle-tracker status
-╭─────────────────────────────────────────────────╮
-│  ◯  Current Phase: MENSTRUAL                    │
-│                                                 │
-│  Day 1 of menstrual phase (typically 5 days)    │
-│  Menstrual phase ends in 4 day(s) (2026-03-27)  │
-╰─────────────────────────────────────────────────╯
-
-# End the cycle when it completes
-$ cycle-tracker end
-Cycle ended on 2026-04-20
-Cycle length: 28 days
-
-# Start the next cycle
-$ cycle-tracker start
-New cycle started on 2026-04-21
-Menstrual phase: 5 days (ends around 2026-04-25)
-```
-
-## Future Features (Planned)
-
-- Future cycle predictions
-- Moon phase correlation
+- **[CITATIONS.md](CITATIONS.md)** - Research attribution
+- **[MOON_PHASE.md](MOON_PHASE.md)** - Moon tracker guide
+- **[CYCLE_MOON.md](CYCLE_MOON.md)** - Combined tracker guide
 
 ## Testing
-
-Run the test suite to verify cycle length predictions:
 
 ```bash
 python3 test_cycle_tracker.py
 ```
 
-The tests verify:
-- Average cycle length calculation from historical data
-- Cycle prediction accuracy (e.g., 26-day average → 26-day predictions)
-- Menstrual phase length calculations
-- Default values when no historical data exists
+Tests include:
+- Cycle length predictions
+- Variance calculations
+- Menstrual phase averaging
+
+## Why Use This?
+
+✅ **Privacy-first**: No data collection, works offline  
+✅ **Honest predictions**: Shows uncertainty, not false precision  
+✅ **Research-based**: Adapted from peer-reviewed methods  
+✅ **Educational**: Explains the science (and myths)  
+✅ **Modular**: Use what you want, ignore the rest  
+
+## Contributing
+
+This is a personal project, but suggestions welcome! Open an issue or PR.
+
+## License
+
+MIT License - Use freely, modify as needed
+
+---
+
+**Note:** This is not medical advice. Consult healthcare professionals for medical concerns.
