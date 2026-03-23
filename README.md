@@ -1,15 +1,30 @@
 # Cycle Tracker
 
-A command-line menstrual cycle phase tracking tool for girls who hate their data being stolen for advertising ✨🩸
+A command-line menstrual cycle phase tracking tool with statistical predictions.
+
+For girls who hate their data being stolen for advertising ✨🩸
 
 ## Features
 
 - Track cycle phases: menstrual, follicular, and luteal
+- **Prediction ranges with confidence intervals** (not just averages!)
+- **Tracking quality assessment** to understand prediction accuracy
+- **Daily updated predictions** that improve as cycle progresses
+- **Luteal phase tracking** (the more stable part of your cycle)
 - User-controlled cycle start and end dates
 - CSV-based data storage for historical tracking
-- Automatic calculation of average menstrual phase length from historical data
-- Notifications about when cycles are due, overdue, or early
-- Information about when menstrual phase will end
+- Automatic calculation of patterns from your historical data
+
+### Statistical Approach
+
+This tracker uses research-based statistical methods adapted for individual use:
+- Variance-based prediction ranges (±1 std dev = 68% confidence)
+- Tracking adherence modeling  
+- Sequential prediction updates
+- Phase-specific pattern recognition
+
+Methods inspired by Urteaga et al. (2021-2022) menstrual cycle prediction research.  
+See [CITATIONS.md](CITATIONS.md) for detailed research credits.
 
 ## Installation
 
@@ -75,6 +90,25 @@ cycle-tracker end
 ```bash
 cycle-tracker status
 ```
+
+Displays:
+- Current phase with visual indicator
+- Days into cycle and menstrual phase end date
+- **Cycle length statistics** (average ± variation)
+- **Predicted cycle end range** with confidence level
+- **Tracking quality score** (0-100)
+- Luteal phase length (if enough data)
+
+### Predict next cycle
+```bash
+cycle-tracker predict
+```
+
+Shows prediction for the next cycle with:
+- Expected start date
+- Likely date range (68% confidence interval)
+- Based on your historical patterns
+- Luteal phase insights
 
 ## How It Works
 
