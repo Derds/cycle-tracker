@@ -32,8 +32,8 @@ See [detailed usage](#usage) below.
 - **Auto-complete previous cycle** when you start a new one
 - **Period end tracking** (bleeding vs full cycle)
 - **Prediction ranges** (not just averages!)
-- **Confidence intervals** (68% confidence)
-- **Quality scores** (0-100)
+- **Confidence intervals** (±1 std dev = 68% confidence)
+- **Quality scores** (0-100, accounts for data quantity)
 - Daily updated predictions
 - Luteal phase insights
 - **Calendar view** with phase predictions
@@ -261,9 +261,9 @@ Perfect for spotting patterns and changes over time!
 ### Statistical Predictions
 
 This tracker uses research-based methods adapted for individual use:
-- **Variance modeling**: Tracks variation, not just average
-- **Confidence intervals**: Shows prediction ranges (±1 std dev = 68%)
-- **Quality assessment**: Warns when data is insufficient
+- **Variance modelling**: Tracks variation, not just average
+- **Confidence intervals**: Shows prediction ranges using ±1 standard deviation (68% confidence = ~2 in 3 cycles will fall in this range)
+- **Quality assessment**: Scores based on data quantity (more cycles = higher confidence) and tracking consistency
 - **Sequential updates**: Predictions improve as cycle progresses
 
 **Research credits:** Methods inspired by [Urteaga et al. (2021-2022)](docs/CITATIONS.md) menstrual cycle prediction research.

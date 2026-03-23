@@ -60,21 +60,32 @@ def calculate_tracking_quality(cycles: List[Cycle]) -> int:
     """
     Calculate tracking quality score (0-100).
     
-    Based on tracking adherence modeling from Urteaga et al.
-    High score = consistent tracking, low score = gaps/missed cycles
+    Based on tracking adherence modelling from Urteaga et al.
+    High score = consistent tracking + sufficient data, low score = gaps/missed cycles/insufficient data
     
     Scoring:
-    - 70 points: Period end tracking (recording when bleeding stops)
-    - 15 points: No outlier cycles
-    - 15 points: No large gaps (missed periods)
+    - 40 points: Data quantity (2-3 cycles=20pts, 4-5=30pts, 6+=40pts)
+    - 40 points: Period end tracking (recording when bleeding stops)
+    - 10 points: No outlier cycles
+    - 10 points: No large gaps (missed periods)
     """
     if len(cycles) < 2:
         return 0
     
-    # Base score: period end date tracking (0-70 points)
-    # Only count completed cycles (current ongoing cycle doesn't count against you)
+    # Data quantity score (0-40 points)
+    # More data = more reliable predictions
     completed_cycles = [c for c in cycles if c.is_complete]
+    total_cycles = len(cycles)
     
+    if total_cycles <= 3:
+        data_score = 20  # Minimal data
+    elif total_cycles <= 5:
+        data_score = 30  # Moderate data
+    else:
+        data_score = 40  # Good data
+    
+    # Period end tracking score (0-40 points)
+    # Only count completed cycles (current ongoing cycle doesn't count against you)
     if completed_cycles:
         tracked_periods = sum(1 for c in completed_cycles if c.period_end_date)
         tracking_rate = tracked_periods / len(completed_cycles)
@@ -82,30 +93,30 @@ def calculate_tracking_quality(cycles: List[Cycle]) -> int:
         # Only one ongoing cycle = perfect so far
         tracking_rate = 1.0 if cycles[0].period_end_date else 0.0
     
-    base_score = tracking_rate * 70
+    tracking_score = tracking_rate * 40
     
-    # Penalty for outliers (likely data errors or missed tracking)
+    # Penalty for outliers (likely data errors or missed tracking) (0-10 points)
     outlier_count = sum(1 for c in cycles if c.is_outlier)
-    outlier_penalty = (outlier_count / len(cycles)) * 15
+    outlier_penalty = (outlier_count / len(cycles)) * 10
     
-    # Penalty for very large gaps (>2x average = likely missed a period)
+    # Penalty for very large gaps (>2x average = likely missed a period) (0-10 points)
     gap_penalties = 0
     avg_length = calculate_average_cycle_length(cycles, exclude_outliers=True)
     
     for i in range(len(cycles) - 1):
         gap = (cycles[i + 1].start_date - cycles[i].start_date).days
-        # Only penalize gaps >2x average (e.g., >56 days for 28-day average)
+        # Only penalise gaps >2x average (e.g., >56 days for 28-day average)
         # This indicates a likely missed period, not normal variation
         if gap > avg_length * 2.0:
             gap_penalties += 1
     
     if len(cycles) > 1:
-        gap_penalty = (gap_penalties / (len(cycles) - 1)) * 15
+        gap_penalty = (gap_penalties / (len(cycles) - 1)) * 10
     else:
         gap_penalty = 0
     
-    # Final score: base - penalties
-    score = base_score - outlier_penalty - gap_penalty
+    # Final score: data + tracking - penalties
+    score = data_score + tracking_score - outlier_penalty - gap_penalty
     return max(0, min(100, round(score)))
 
 
