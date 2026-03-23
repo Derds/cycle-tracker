@@ -289,7 +289,7 @@ This tracker uses research-based methods adapted for individual use:
 - **[docs/CYCLE_MOON.md](docs/CYCLE_MOON.md)** - Combined tracker guide
 - **[docs/CODE_STRUCTURE.md](docs/CODE_STRUCTURE.md)** - Architecture documentation
 - **[docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)** - Planned enhancements
-- **[CYCLE_MOON.md](CYCLE_MOON.md)** - Combined tracker guide
+- **[docs/CYCLE_MOON.md](CYCLE_MOON.md)** - Combined tracker guide
 
 ## Testing
 
