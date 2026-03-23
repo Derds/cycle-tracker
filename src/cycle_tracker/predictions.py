@@ -15,7 +15,7 @@ from statistics import (
 
 def get_current_phase(cycles, today=None) -> Tuple[Optional[str], str]:
     """
-    Determine current cycle phase.
+    Determine current cycle phase for a given date.
     
     Returns: (phase_name, description) or (None, message)
     """
@@ -25,20 +25,42 @@ def get_current_phase(cycles, today=None) -> Tuple[Optional[str], str]:
     if not cycles:
         return None, "No cycle data. Use 'cycle-tracker start' to begin tracking."
     
-    current_cycle = cycles[-1]
+    # Find which cycle this date belongs to
+    target_cycle = None
+    for cycle in cycles:
+        if cycle.start_date <= today:
+            # Check if date falls within this cycle
+            if cycle.is_complete:
+                # Completed cycle: check if before end date
+                if today <= cycle.end_date:
+                    target_cycle = cycle
+                    break
+            else:
+                # Ongoing cycle: it's the latest one, use it
+                target_cycle = cycle
+                break
     
-    # If cycle has ended, check if new one is due
-    if current_cycle.is_complete and current_cycle.end_date < today:
+    if not target_cycle:
+        # Date is before first recorded cycle
+        return None, "Date is before first recorded cycle."
+    
+    # If we're past the end of a completed cycle, check if new one is due
+    if target_cycle.is_complete and target_cycle.end_date < today:
         return None, check_cycle_due(today, cycles)
     
-    days_since_start = (today - current_cycle.start_date).days
+    days_since_start = (today - target_cycle.start_date).days
     
     # Determine phase
     avg_period = calculate_average_period_length(cycles)
-    period_days = current_cycle.period_length or avg_period
+    period_days = target_cycle.period_length or avg_period
     
     if days_since_start < period_days:
-        return 'menstrual', f"Day {days_since_start + 1} of menstrual phase (typically {period_days} days)"
+        # Determine if we should show actual or estimated
+        if target_cycle.period_length:
+            day_label = f"Day {days_since_start + 1} of menstrual phase (typically {period_days} days)"
+        else:
+            day_label = f"Day {days_since_start + 1} of menstrual phase (avg {period_days} days)"
+        return 'menstrual', day_label
     elif days_since_start < 14:
         return 'follicular', f"Day {days_since_start + 1} of cycle"
     else:
