@@ -38,7 +38,7 @@ See [detailed usage](#usage) below.
 - Luteal phase insights
 - **Calendar view** with phase predictions
 - **Future date predictions** (what phase will I be in on X date?)
-- **Historical trend graphs** (ASCII charts in your terminal)
+- **Historical trend graphs** (ASCII bar charts in your terminal)
 
 ### 🌙 Moon Phase (Optional)
 - Check current moon phase
@@ -223,34 +223,33 @@ See [docs/CYCLE_MOON.md](docs/CYCLE_MOON.md) for details.
 <details>
 <summary>📊 Visualising Your Data</summary>
 
-View historical trends with ASCII graphs:
+View historical trends with ASCII bar charts:
 
 ```bash
 cycle-tracker graph
 ```
 
 Shows:
-- **Cycle length over time** with trend line
-- **Period length over time** with trend line  
+- **Cycle length over time** as bar chart with trend analysis
+- **Period length over time** as bar chart with trend analysis
 - Summary statistics
 - Trend interpretation (stable/increasing/decreasing)
 
 Example output:
 ```
-╭─────────────────────────────────────────────────╮
-│         Cycle Length Over Time                  │
-├─────────────────────────────────────────────────┤
-│  30 │          ●      ●                         │
-│  28 │      ●      ●──────●──────                │
-│  26 │  ●──────                      ●           │
-│  24 │                                   ●       │
-├─────┼─────────────────────────────────────────┤
-│      Jun 25        Oct 25        Feb 26        │
-╰─────────────────────────────────────────────────╯
+╭────────────────────────────────────────╮
+│     Cycle Length Over Time             │
+├────────────────────────────────────────┤
+│  30 │       ███     ███                │
+│  28 │   ███ ███ ███ ███ ███            │
+│  26 │ ███ ███ ███ ███ ███ ███          │
+│  24 │ ███ ███ ███ ███ ███ ███ ███      │
+├─────┴──────────────────────────────────┤
+│     │ 11/ 06/ 05/ 31/ 26/ 25/ 24/ 21/ │
+╰────────────────────────────────────────╯
 
-● Data points     ─ Trend line
-Days: 25-31 days (avg: 28.3)
-Trend: stable
+Average: 28.3 days  |  Range: 25-31 days
+Trend: Increasing ↗ (+0.30 days per cycle)
 ```
 
 Perfect for spotting patterns and changes over time!

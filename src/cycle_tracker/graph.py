@@ -10,28 +10,26 @@ from data_manager import Cycle
 from statistics import calculate_cycle_statistics, calculate_average_period_length
 
 
-def create_ascii_graph(
+def create_ascii_bar_chart(
     data_points: List[Tuple[date, int]], 
     title: str, 
     y_label: str,
-    width: int = 60,
-    height: int = 15
+    height: int = 12
 ) -> str:
     """
-    Create an ASCII graph of data over time.
+    Create an ASCII bar chart of data over time.
     
     Args:
         data_points: List of (date, value) tuples
-        title: Graph title
+        title: Chart title
         y_label: Label for Y-axis
-        width: Graph width in characters
-        height: Graph height in lines
+        height: Chart height in lines
     
     Returns:
-        ASCII art graph as string
+        ASCII art bar chart as string
     """
     if not data_points:
-        return f"No data to graph for {title}"
+        return f"No data to chart for {title}"
     
     # Sort by date
     data_points = sorted(data_points, key=lambda x: x[0])
@@ -39,159 +37,97 @@ def create_ascii_graph(
     dates = [d[0] for d in data_points]
     values = [d[1] for d in data_points]
     
+    n = len(values)
     min_val = min(values)
     max_val = max(values)
     
-    # Add some padding to the range
-    range_val = max_val - min_val
-    if range_val == 0:
-        range_val = 1
-    padding = max(1, range_val * 0.1)
-    min_val -= padding
-    max_val += padding
+    # Calculate statistics
+    mean_val = sum(values) / n
     
     # Calculate trend line (simple linear regression)
-    n = len(values)
     x_vals = list(range(n))
-    
     mean_x = sum(x_vals) / n
-    mean_y = sum(values) / n
     
-    numerator = sum((x_vals[i] - mean_x) * (values[i] - mean_y) for i in range(n))
+    numerator = sum((x_vals[i] - mean_x) * (values[i] - mean_val) for i in range(n))
     denominator = sum((x - mean_x) ** 2 for x in x_vals)
     
     if denominator != 0:
         slope = numerator / denominator
-        intercept = mean_y - slope * mean_x
     else:
         slope = 0
-        intercept = mean_y
     
-    # Build the graph
-    graph = []
-    graph.append("╭" + "─" * (width + 8) + "╮")
-    graph.append(f"│ {title:^{width + 6}} │")
-    graph.append("├" + "─" * (width + 8) + "┤")
+    # Calculate bar width based on number of data points
+    # Leave space between bars
+    bar_width = 3 if n <= 15 else (2 if n <= 25 else 1)
+    spacing = 1
+    total_width = n * (bar_width + spacing) + 10
     
-    # Y-axis and plot area
+    # Build the chart
+    chart = []
+    chart.append("╭" + "─" * total_width + "╮")
+    chart.append(f"│ {title:^{total_width - 2}} │")
+    chart.append("├" + "─" * total_width + "┤")
+    
+    # Y-axis range
+    range_val = max_val - min_val
+    if range_val == 0:
+        range_val = 1
+    
+    # Draw bars from top to bottom
     for row in range(height):
         # Y value for this row (top to bottom = high to low)
-        y_val = max_val - (row / (height - 1)) * (max_val - min_val)
+        y_threshold = max_val - (row / (height - 1)) * range_val
         
-        # Y-axis label
-        y_label_str = f"{int(y_val):3d}"
+        # Y-axis label (show scale on left)
+        if row % 3 == 0:  # Only show some labels
+            y_label_str = f"{int(y_threshold):3d}"
+        else:
+            y_label_str = "   "
+        
         line = f"│ {y_label_str} │ "
         
-        # Plot each column
-        for col in range(width):
-            # Map column to data point
-            if n == 1:
-                data_idx = 0
+        # Draw bars
+        for i, val in enumerate(values):
+            # Check if bar reaches this height
+            if val >= y_threshold:
+                line += "█" * bar_width
             else:
-                data_idx = int((col / (width - 1)) * (n - 1))
+                line += " " * bar_width
             
-            actual_val = values[data_idx]
-            trend_val = slope * data_idx + intercept
-            
-            # Determine what to plot
-            # Check if actual data point is at this position
-            actual_y_pos = height - 1 - int(((actual_val - min_val) / (max_val - min_val)) * (height - 1))
-            trend_y_pos = height - 1 - int(((trend_val - min_val) / (max_val - min_val)) * (height - 1))
-            
-            if row == actual_y_pos:
-                # Show actual data point
-                line += "●"
-            elif row == trend_y_pos:
-                # Show trend line
-                line += "─"
-            else:
-                line += " "
+            # Add spacing between bars
+            if i < n - 1:
+                line += " " * spacing
         
         line += " │"
-        graph.append(line)
+        chart.append(line)
     
     # X-axis
-    graph.append("├" + "─" * 5 + "┼" + "─" * width + "┤")
+    chart.append("├" + "─" * 5 + "┴" + "─" * (total_width - 6) + "┤")
     
-    # X-axis labels (dates)
-    if n >= 3:
-        first_date = dates[0].strftime("%b %y")
-        mid_date = dates[n // 2].strftime("%b %y")
-        last_date = dates[-1].strftime("%b %y")
-        
-        # Build label line more carefully
-        label_line = "│" + " " * 6
-        
-        # Add first date
-        label_line += first_date
-        
-        # Calculate where mid and last dates should go
-        mid_target = 6 + width // 2 - len(mid_date) // 2
-        last_target = 6 + width - len(last_date)
-        
-        # Fill spaces and add labels
-        current_pos = 6 + len(first_date)
-        
-        # Fill to mid position
-        while current_pos < mid_target:
-            label_line += " "
-            current_pos += 1
-        
-        # Add mid date if we're at the right position
-        if current_pos == mid_target:
-            label_line += mid_date
-            current_pos += len(mid_date)
-        
-        # Fill to last position
-        while current_pos < last_target:
-            label_line += " "
-            current_pos += 1
-        
-        # Add last date
-        if current_pos == last_target:
-            label_line += last_date
-            current_pos += len(last_date)
-        
-        # Pad to end
-        while current_pos < 6 + width:
-            label_line += " "
-            current_pos += 1
-        
-        label_line += " │"
-    else:
-        # Not enough data for multiple labels
-        first_date = dates[0].strftime("%b %y")
-        label_line = f"│      {first_date}" + " " * (width - len(first_date)) + " │"
+    # Date labels on bottom
+    label_line = "│     │ "
+    for i, dt in enumerate(dates):
+        date_str = dt.strftime("%d/%m")[0:bar_width]  # Truncate to bar width
+        label_line += date_str.center(bar_width)
+        if i < n - 1:
+            label_line += " " * spacing
+    label_line += " │"
+    chart.append(label_line)
     
-    graph.append(label_line)
-    graph.append("╰" + "─" * (width + 8) + "╯")
+    chart.append("╰" + "─" * total_width + "╯")
     
-    # Add legend
-    graph.append("")
-    graph.append(f"  ● Data points     ─ Trend line")
-    graph.append(f"  {y_label}: {min(values)}-{max(values)} days (avg: {sum(values)/len(values):.1f})")
-    
-    # Trend interpretation
-    if abs(slope) < 0.01:
-        trend_text = "stable"
-    elif slope > 0:
-        trend_text = f"increasing (↗ +{slope:.2f} days per cycle)"
-    else:
-        trend_text = f"decreasing (↘ {slope:.2f} days per cycle)"
-    graph.append(f"  Trend: {trend_text}")
-    
-    return "\n".join(graph)
+    return "\n".join(chart)
 
 
 def graph_cycle_history(cycles: List[Cycle]) -> str:
     """
-    Create graphs showing cycle length and period length trends.
+    Create bar charts showing cycle length and period length trends.
     
     Args:
         cycles: List of Cycle objects
     
     Returns:
-        Multi-line string with graphs
+        Multi-line string with bar charts and statistics
     """
     if not cycles:
         return "No cycle data to graph. Start tracking with 'cycle-tracker start'."
@@ -208,32 +144,82 @@ def graph_cycle_history(cycles: List[Cycle]) -> str:
     output.append("=" * 70)
     output.append("")
     
-    # Graph 1: Cycle Length over time
+    # Chart 1: Cycle Length over time
     cycle_data = [(c.start_date, c.cycle_length) for c in complete_cycles]
-    cycle_graph = create_ascii_graph(
+    values = [d[1] for d in cycle_data]
+    
+    cycle_chart = create_ascii_bar_chart(
         cycle_data,
         "Cycle Length Over Time",
         "Days",
-        width=55,
-        height=12
+        height=10
     )
-    output.append(cycle_graph)
+    output.append(cycle_chart)
+    output.append("")
+    
+    # Statistics for cycle length
+    mean_cycle = sum(values) / len(values)
+    min_cycle = min(values)
+    max_cycle = max(values)
+    
+    # Calculate trend
+    n = len(values)
+    x_vals = list(range(n))
+    mean_x = sum(x_vals) / n
+    numerator = sum((x_vals[i] - mean_x) * (values[i] - mean_cycle) for i in range(n))
+    denominator = sum((x - mean_x) ** 2 for x in x_vals)
+    slope = numerator / denominator if denominator != 0 else 0
+    
+    output.append(f"  Average: {mean_cycle:.1f} days  |  Range: {min_cycle}-{max_cycle} days")
+    
+    if abs(slope) < 0.01:
+        trend_text = "Trend: Stable ═"
+    elif slope > 0:
+        trend_text = f"Trend: Increasing ↗ (+{slope:.2f} days per cycle)"
+    else:
+        trend_text = f"Trend: Decreasing ↘ ({slope:.2f} days per cycle)"
+    output.append(f"  {trend_text}")
     output.append("")
     output.append("")
     
-    # Graph 2: Period (Menstrual Phase) Length over time
+    # Chart 2: Period (Menstrual Phase) Length over time
     period_cycles = [c for c in complete_cycles if c.period_length is not None]
     
     if period_cycles:
         period_data = [(c.start_date, c.period_length) for c in period_cycles]
-        period_graph = create_ascii_graph(
+        period_values = [d[1] for d in period_data]
+        
+        period_chart = create_ascii_bar_chart(
             period_data,
             "Menstrual Phase Length Over Time",
             "Days",
-            width=55,
-            height=12
+            height=10
         )
-        output.append(period_graph)
+        output.append(period_chart)
+        output.append("")
+        
+        # Statistics for period length
+        mean_period = sum(period_values) / len(period_values)
+        min_period = min(period_values)
+        max_period = max(period_values)
+        
+        # Calculate trend
+        n_period = len(period_values)
+        x_vals_period = list(range(n_period))
+        mean_x_period = sum(x_vals_period) / n_period
+        numerator_period = sum((x_vals_period[i] - mean_x_period) * (period_values[i] - mean_period) for i in range(n_period))
+        denominator_period = sum((x - mean_x_period) ** 2 for x in x_vals_period)
+        slope_period = numerator_period / denominator_period if denominator_period != 0 else 0
+        
+        output.append(f"  Average: {mean_period:.1f} days  |  Range: {min_period}-{max_period} days")
+        
+        if abs(slope_period) < 0.01:
+            trend_text_period = "Trend: Stable ═"
+        elif slope_period > 0:
+            trend_text_period = f"Trend: Increasing ↗ (+{slope_period:.2f} days per cycle)"
+        else:
+            trend_text_period = f"Trend: Decreasing ↘ ({slope_period:.2f} days per cycle)"
+        output.append(f"  {trend_text_period}")
         output.append("")
     else:
         output.append("Track period end dates to see menstrual phase trends!")
@@ -241,19 +227,19 @@ def graph_cycle_history(cycles: List[Cycle]) -> str:
         output.append("")
     
     # Summary statistics
-    mean_cycle, std_cycle = calculate_cycle_statistics(complete_cycles, exclude_outliers=True)
+    mean_cycle_stat, std_cycle = calculate_cycle_statistics(complete_cycles, exclude_outliers=True)
     avg_period = calculate_average_period_length(cycles)
     
     output.append("=" * 70)
-    output.append("SUMMARY STATISTICS")
+    output.append("SUMMARY")
     output.append("=" * 70)
     output.append(f"  Total cycles tracked: {len(cycles)}")
     output.append(f"  Complete cycles: {len(complete_cycles)}")
-    output.append(f"  Average cycle length: {mean_cycle:.1f} ± {std_cycle:.1f} days")
+    output.append(f"  Average cycle length: {mean_cycle_stat:.1f} ± {std_cycle:.1f} days")
     output.append(f"  Average period length: {avg_period} days")
     
     if len(cycles) != len(complete_cycles):
-        output.append(f"  Excluded from graphs: {len(cycles) - len(complete_cycles)} (ongoing or outliers)")
+        output.append(f"  Excluded from charts: {len(cycles) - len(complete_cycles)} (ongoing or outliers)")
     
     output.append("=" * 70)
     
