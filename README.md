@@ -253,14 +253,23 @@ This tracker uses research-based methods adapted for individual use:
 
 ## Testing
 
+Run the comprehensive test suite:
+
 ```bash
-python3 test_cycle_tracker.py
+python3 src/cycle_tracker/test_cycle_tracker.py
 ```
 
-Tests include:
-- Cycle length predictions
-- Variance calculations
-- Menstrual phase averaging
+Tests cover:
+- ✓ Cycle statistics (mean, standard deviation, outlier exclusion)
+- ✓ Period length calculation
+- ✓ Tracking quality scoring  
+- ✓ Phase detection (menstrual, follicular, luteal)
+- ✓ Historical date phase lookup
+- ✓ Future date predictions
+- ✓ Next cycle prediction with confidence intervals
+- ✓ Outlier detection and exclusion
+
+All tests use synthetic data and run in seconds. No real data required.
 
 ## Why Use This?
 
