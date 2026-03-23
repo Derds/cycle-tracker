@@ -78,42 +78,49 @@ def predict_phase_on_date(cycles, target_date) -> Tuple[Optional[str], str]:
     current_cycle = cycles[-1]
     today = datetime.now().date()
     
-    # If target is today or during current cycle, use actual data
+    # If target is in the past or today, use actual data
     if target_date <= today:
         return get_current_phase(cycles, target_date)
     
-    if not current_cycle.is_complete and target_date > current_cycle.start_date:
-        days_into_cycle = (target_date - current_cycle.start_date).days
-        avg_period = calculate_average_period_length(cycles)
-        
-        if days_into_cycle < avg_period:
-            return 'menstrual', f"Day {days_into_cycle + 1} of menstrual phase (estimated)"
-        elif days_into_cycle < 14:
-            return 'follicular', f"Day {days_into_cycle + 1} of cycle (estimated)"
-        else:
-            return 'luteal', f"Day {days_into_cycle + 1} of cycle (estimated)"
-    
-    # For future predictions
+    # Get averages for predictions
     valid_cycles = get_valid_cycles(cycles, exclude_outliers=True)
     if not valid_cycles:
         return None, "Need at least 1 valid cycle for future predictions."
     
     mean_cycle, _ = calculate_cycle_statistics(cycles, exclude_outliers=True)
+    avg_period = calculate_average_period_length(cycles)
     
-    # Estimate which cycle the target falls into
+    # If target is within current ongoing cycle
+    if not current_cycle.is_complete and target_date >= current_cycle.start_date:
+        days_into_cycle = (target_date - current_cycle.start_date).days
+        
+        # Estimate when this cycle will end
+        expected_cycle_length = int(mean_cycle)
+        
+        # Check if target is still within this cycle
+        if days_into_cycle < expected_cycle_length:
+            # Determine phase based on position in cycle
+            if days_into_cycle < avg_period:
+                return 'menstrual', f"Day {days_into_cycle + 1} of menstrual phase (estimated)"
+            elif days_into_cycle < 14:
+                return 'follicular', f"Day {days_into_cycle + 1} of cycle (estimated)"
+            else:
+                return 'luteal', f"Day {days_into_cycle + 1} of cycle (estimated)"
+    
+    # For dates beyond current cycle, predict future cycles
     if current_cycle.is_complete:
         estimate_start = current_cycle.end_date + timedelta(days=1)
     else:
         estimate_start = current_cycle.start_date + timedelta(days=int(mean_cycle))
     
     # Step through cycles until we reach target
-    while estimate_start + timedelta(days=int(mean_cycle)) < target_date:
+    while estimate_start + timedelta(days=int(mean_cycle)) <= target_date:
         estimate_start += timedelta(days=int(mean_cycle))
     
     days_into_cycle = (target_date - estimate_start).days
-    avg_period = calculate_average_period_length(cycles)
     
     if days_into_cycle < 0:
+        # Target is between cycles (in the gap before next cycle starts)
         return None, f"Between cycles (next expected ~{estimate_start.strftime('%Y-%m-%d')})"
     elif days_into_cycle < avg_period:
         return 'menstrual', f"Likely day {days_into_cycle + 1} of menstrual phase (estimated)"

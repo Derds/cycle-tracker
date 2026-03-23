@@ -82,7 +82,7 @@ cycle-tracker/
 
 **Data files** (git-ignored):
 - `.cycle_tracker_data.csv` - Your cycle data (in project root)
-- `moon_config.json` - Moon tracker location config (optional)
+- `src/moon_tracker/moon_config.json` - Moon tracker location config (optional)
 
 ## Installation
 
@@ -193,8 +193,8 @@ $ cycle-tracker status
 moon-phase
 
 # Configure your location
-cp moon_config.json.example moon_config.json
-# Edit moon_config.json with your city coordinates
+cp src/moon_tracker/moon_config.json.example src/moon_tracker/moon_config.json
+# Edit src/moon_tracker/moon_config.json with your city coordinates
 ```
 
 See [docs/MOON_PHASE.md](docs/MOON_PHASE.md) for details.
