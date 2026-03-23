@@ -10,17 +10,23 @@ A privacy-first, command-line menstrual cycle tracker with statistical predictio
 # 1. Setup
 cycle-tracker setup
 
-# 2. Start your cycle
+# 2. Start tracking when your period begins
 cycle-tracker start
 
-# 3. Check your status anytime
+# 3. Mark when bleeding stops (optional but recommended)
+cycle-tracker end-period
+
+# 4. Check status anytime
 cycle-tracker status
 
-# 4. When cycle ends
+# 5. End cycle when next period starts
 cycle-tracker end
+cycle-tracker start  # Start the new cycle
 ```
 
-That's it! See [detailed usage](#usage) below.
+**Important:** Don't end the cycle when your period ends! Wait until your next period starts.
+
+See [detailed usage](#usage) below.
 
 ## Features
 
@@ -92,19 +98,24 @@ That's it! See [detailed usage](#usage) below.
 # Initialize (first time only)
 cycle-tracker setup
 
-# Start a new cycle
+# Start a new cycle (when period/bleeding begins)
 cycle-tracker start
 
-# Check current phase
-cycle-tracker              # Quick view: menstrual/follicular/luteal
-cycle-tracker status       # Detailed view with statistics
+# Mark when bleeding stops (optional but recommended)
+cycle-tracker end-period
 
-# End current cycle
+# Check current phase
+cycle-tracker              # Quick: menstrual/follicular/luteal
+cycle-tracker status       # Detailed with statistics
+
+# End cycle when NEXT period starts (not when bleeding stops!)
 cycle-tracker end
 
 # Predict next cycle
 cycle-tracker predict
 ```
+
+**Key Concept:** A menstrual cycle runs from the first day of one period to the day before the next period starts (typically 21-35 days). Don't confuse this with your period length (typically 4-7 days).
 
 ### What You Get
 

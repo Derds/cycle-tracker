@@ -50,7 +50,7 @@ def setup_data_file():
     """Initialize the data file if it doesn't exist"""
     if not DATA_FILE.exists():
         with open(DATA_FILE, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days'])
+            writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days', 'period_end_date'])
             writer.writeheader()
         print(f"✓ Data file created at: {DATA_FILE}")
         return True
@@ -70,22 +70,24 @@ def load_cycles():
             cycles.append({
                 'start_date': datetime.strptime(row['start_date'], '%Y-%m-%d').date(),
                 'end_date': datetime.strptime(row['end_date'], '%Y-%m-%d').date() if row['end_date'] else None,
-                'menstrual_days': int(row['menstrual_days'])
+                'menstrual_days': int(row['menstrual_days']),
+                'period_end_date': datetime.strptime(row['period_end_date'], '%Y-%m-%d').date() if row.get('period_end_date') else None
             })
     return cycles
 
-def save_cycle(start_date, end_date=None, menstrual_days=DEFAULT_MENSTRUAL_DAYS):
+def save_cycle(start_date, end_date=None, menstrual_days=DEFAULT_MENSTRUAL_DAYS, period_end_date=None):
     """Save a new cycle to CSV file"""
     file_exists = DATA_FILE.exists()
     
     with open(DATA_FILE, 'a', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days'])
+        writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days', 'period_end_date'])
         if not file_exists:
             writer.writeheader()
         writer.writerow({
             'start_date': start_date.strftime('%Y-%m-%d'),
             'end_date': end_date.strftime('%Y-%m-%d') if end_date else '',
-            'menstrual_days': menstrual_days
+            'menstrual_days': menstrual_days,
+            'period_end_date': period_end_date.strftime('%Y-%m-%d') if period_end_date else ''
         })
 
 def update_last_cycle_end(end_date):
@@ -99,14 +101,46 @@ def update_last_cycle_end(end_date):
     
     # Rewrite the entire file
     with open(DATA_FILE, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days'])
+        writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days', 'period_end_date'])
         writer.writeheader()
         for cycle in cycles:
             writer.writerow({
                 'start_date': cycle['start_date'].strftime('%Y-%m-%d'),
                 'end_date': cycle['end_date'].strftime('%Y-%m-%d') if cycle['end_date'] else '',
-                'menstrual_days': cycle['menstrual_days']
+                'menstrual_days': cycle['menstrual_days'],
+                'period_end_date': cycle.get('period_end_date').strftime('%Y-%m-%d') if cycle.get('period_end_date') else ''
             })
+
+def update_period_end(period_end_date):
+    """Update when the period (bleeding) ended"""
+    cycles = load_cycles()
+    if not cycles:
+        print("Error: No cycles to update")
+        return
+    
+    if cycles[-1]['end_date']:
+        print("Error: Cycle already ended. Cannot update period end date.")
+        return
+    
+    cycles[-1]['period_end_date'] = period_end_date
+    
+    # Calculate actual period length
+    period_length = (period_end_date - cycles[-1]['start_date']).days + 1
+    
+    # Rewrite the entire file
+    with open(DATA_FILE, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['start_date', 'end_date', 'menstrual_days', 'period_end_date'])
+        writer.writeheader()
+        for cycle in cycles:
+            writer.writerow({
+                'start_date': cycle['start_date'].strftime('%Y-%m-%d'),
+                'end_date': cycle['end_date'].strftime('%Y-%m-%d') if cycle['end_date'] else '',
+                'menstrual_days': cycle['menstrual_days'],
+                'period_end_date': cycle.get('period_end_date').strftime('%Y-%m-%d') if cycle.get('period_end_date') else ''
+            })
+    
+    print(f"Period ended on {period_end_date.strftime('%Y-%m-%d')}")
+    print(f"Period length: {period_length} days")
 
 def calculate_average_menstrual_days(cycles):
     """Calculate average menstrual phase length from historical data"""
@@ -395,6 +429,11 @@ def show_status():
             else:
                 lines.append(f"Menstrual phase ends in {days_left} day(s) ({menstrual_end.strftime('%Y-%m-%d')})")
         
+        # Show actual period length if recorded
+        if current_cycle.get('period_end_date'):
+            actual_period_length = (current_cycle['period_end_date'] - current_cycle['start_date']).days + 1
+            lines.append(f"Period length: {actual_period_length} days (ended {current_cycle['period_end_date'].strftime('%Y-%m-%d')})")
+        
         # Enhanced predictions with confidence intervals (if enough data)
         completed_cycles = [c for c in cycles if c['end_date']]
         if len(completed_cycles) >= 2:
@@ -448,6 +487,20 @@ def main():
     
     elif command == "end":
         end_cycle()
+    
+    elif command == "end-period":
+        # Mark when bleeding stopped
+        today = datetime.now().date()
+        cycles = load_cycles()
+        
+        if not cycles:
+            print("Error: No cycle to update. Start a cycle first.")
+        elif cycles[-1]['end_date']:
+            print("Error: Cycle already ended. Use this command during an active cycle.")
+        elif cycles[-1].get('period_end_date'):
+            print(f"Error: Period already marked as ended on {cycles[-1]['period_end_date'].strftime('%Y-%m-%d')}")
+        else:
+            update_period_end(today)
     
     elif command == "status":
         show_status()
@@ -505,12 +558,15 @@ def main():
         print("Cycle Tracker Usage:")
         print("  cycle-tracker setup                   - Initialize data file")
         print("  cycle-tracker start [menstrual_days]  - Start a new cycle")
-        print("  cycle-tracker end                     - End current cycle")
+        print("  cycle-tracker end-period              - Mark when period (bleeding) ends")
+        print("  cycle-tracker end                     - End current cycle (when next period starts)")
         print("  cycle-tracker cycle-phase             - Get current phase (menstrual/follicular/luteal)")
         print("  cycle-tracker status                  - Show detailed status with predictions")
         print("  cycle-tracker predict                 - Predict next cycle with confidence ranges")
         print("")
         print("Default command (no arguments): cycle-phase")
+        print("")
+        print("Note: A full cycle = from first day of period to day before next period (21-35 days)")
 
 if __name__ == "__main__":
     main()
