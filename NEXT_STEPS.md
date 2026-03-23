@@ -2,7 +2,7 @@
 
 ## Planned Enhancements
 
-### Phase 1: Already Completed ✅
+### Phase 1: Core Features ✅ COMPLETED
 
 - [x] Basic cycle tracking
 - [x] Statistical predictions with confidence intervals
@@ -13,8 +13,27 @@
 - [x] Moon phase tracker
 - [x] Combined cycle/moon analysis
 - [x] Research attribution
+- [x] Calendar view with predictions
+- [x] Future date predictions
+- [x] Comprehensive help system
+- [x] Auto-complete previous cycle on new start
+- [x] Period end tracking separate from cycle
 
-### Phase 2: Data Export & Visualization
+### Phase 2: Data Model Simplification
+
+#### Simplify CSV Schema
+- [ ] Refactor from: start_date, end_date, menstrual_days, period_end_date
+- [ ] To: start_date, period_end_date, period_length
+- [ ] Derive cycle_end_date from next cycle's start_date
+- [ ] Update all ~50+ references in codebase
+- [ ] Migration tool for existing data
+
+**Complexity:** High (requires careful refactoring)  
+**Benefit:** Simpler data model, clearer concept  
+**Risk:** Breaking existing functionality  
+**Status:** Deferred - current model works well
+
+### Phase 3: Data Export & Visualisation
 
 #### Export Functionality
 - [ ] Export cycle data to JSON
