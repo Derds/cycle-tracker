@@ -207,6 +207,76 @@ def print_correlation_analysis():
                 print(f"  {emoji} {moon_name:20s} {percentage:5.1f}% ({count} days)")
         print()
     
+    # Cycle Start Moon Phase Analysis
+    print("━━━ Cycle Start Moon Phase ━━━")
+    print("What moon phase do your cycles typically begin on?\n")
+    
+    # Analyse moon phase at start of each cycle
+    cycle_start_moons = defaultdict(int)
+    valid_cycle_count = 0
+    
+    for cycle in get_valid_cycles(cycles, exclude_outliers=True):
+        if cycle.start_date:
+            moon_pos = moon_phase.calculate_moon_phase(datetime.combine(cycle.start_date, datetime.min.time()))
+            moon_key, _ = moon_phase.get_moon_phase_name(moon_pos)
+            cycle_start_moons[moon_key] += 1
+            valid_cycle_count += 1
+    
+    if valid_cycle_count > 0:
+        sorted_start_moons = sorted(cycle_start_moons.items(), key=lambda x: x[1], reverse=True)
+        
+        for moon_key, count in sorted_start_moons:
+            percentage = (count / valid_cycle_count) * 100
+            emoji = moon_phase.MOON_PHASES[moon_key]
+            # Get proper name
+            for pos in [0.01, 0.1, 0.25, 0.45, 0.5, 0.6, 0.75, 0.9]:
+                key, name = moon_phase.get_moon_phase_name(pos)
+                if key == moon_key:
+                    moon_name = name
+                    break
+            
+            print(f"  {emoji} {moon_name:20s} {percentage:5.1f}% ({count}/{valid_cycle_count} cycles)")
+        
+        # Highlight new vs full moon, and most common overall
+        new_moon_count = cycle_start_moons.get('new', 0)
+        full_moon_count = cycle_start_moons.get('full', 0)
+        most_common = sorted_start_moons[0] if sorted_start_moons else None
+        
+        print()
+        
+        # First show the overall most common phase
+        if most_common:
+            moon_key, count = most_common
+            percentage = (count / valid_cycle_count) * 100
+            emoji = moon_phase.MOON_PHASES[moon_key]
+            # Get proper name
+            for pos in [0.01, 0.1, 0.25, 0.45, 0.5, 0.6, 0.75, 0.9]:
+                key, name = moon_phase.get_moon_phase_name(pos)
+                if key == moon_key:
+                    phase_name = name
+                    break
+            
+            if percentage >= 30:  # Strong pattern
+                print(f"  ✨ Strong pattern: You often start cycles during {emoji} {phase_name}")
+                print(f"     ({count}/{valid_cycle_count} cycles = {percentage:.0f}%)")
+        
+        # Then compare new vs full moon specifically
+        if new_moon_count > 0 or full_moon_count > 0:
+            print()
+            print("  New Moon 🌑 vs Full Moon 🌕:")
+            if new_moon_count > full_moon_count and new_moon_count > 0:
+                print(f"     Lean towards NEW MOON ({new_moon_count} vs {full_moon_count})")
+            elif full_moon_count > new_moon_count and full_moon_count > 0:
+                print(f"     Lean towards FULL MOON ({full_moon_count} vs {new_moon_count})")
+            elif new_moon_count == full_moon_count and new_moon_count > 0:
+                print(f"     Equal split ({new_moon_count} each)")
+            else:
+                print(f"     Neither dominates ({new_moon_count} new, {full_moon_count} full)")
+    else:
+        print("  Not enough data to analyse cycle start patterns")
+    
+    print()
+    
     # Interesting patterns
     print("━━━ Patterns ━━━")
     
@@ -223,19 +293,6 @@ def print_correlation_analysis():
             if max_percentage > 30:  # If one moon phase dominates >30%
                 emoji = moon_phase.MOON_PHASES[max_moon[0]]
                 print(f"  • Your {cycle_phase} phase often coincides with {emoji} moon phases")
-    
-    # Check for full/new moon alignment
-    menstrual_new = correlations['menstrual'].get('new', 0)
-    menstrual_full = correlations['menstrual'].get('full', 0)
-    
-    if total_days['menstrual'] > 0:
-        new_percent = (menstrual_new / total_days['menstrual']) * 100
-        full_percent = (menstrual_full / total_days['menstrual']) * 100
-        
-        if new_percent > 20:
-            print(f"  • Your period often starts around 🌑 new moon ({new_percent:.0f}% of the time)")
-        if full_percent > 20:
-            print(f"  • Your period often starts around 🌕 full moon ({full_percent:.0f}% of the time)")
     
     print("\n💡 Note: Correlation does not imply causation!")
     print("   These patterns may be coincidental.\n")
