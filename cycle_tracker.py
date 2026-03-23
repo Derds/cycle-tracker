@@ -12,6 +12,13 @@ DATA_FILE = Path.home() / ".cycle_tracker_data.csv"
 DEFAULT_MENSTRUAL_DAYS = 5
 DEFAULT_CYCLE_LENGTH = 28
 
+PHASE_VISUALS = {
+    'menstrual': '◯',      # Empty circle
+    'follicular': '◔',     # Quarter filled
+    'luteal': '◕',         # Three-quarters filled
+    'complete': '●'        # Full circle
+}
+
 def load_cycles():
     """Load cycle data from CSV file"""
     if not DATA_FILE.exists():
@@ -180,7 +187,8 @@ def show_status():
     phase, info = get_current_phase(today)
     
     if phase:
-        print(f"Current phase: {phase}")
+        visual = PHASE_VISUALS.get(phase, '')
+        print(f"{visual}  Current phase: {phase}")
         print(info)
         
         # Show when menstrual phase will end
@@ -223,7 +231,8 @@ def main():
     elif command == "cycle-phase":
         phase, info = get_current_phase()
         if phase:
-            print(phase)
+            visual = PHASE_VISUALS.get(phase, '')
+            print(f"{visual} {phase}")
         else:
             print("No active cycle")
             print(info)

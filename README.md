@@ -19,10 +19,17 @@ Make the script executable:
 chmod +x cycle_tracker.py
 ```
 
-Optionally, create a symlink for easy access:
+Create a symlink for easy access:
 
 ```bash
-ln -s /Users/dervla.obrien/Documents/personal-projects/cycle-tracker/cycle_tracker.py /usr/local/bin/cycle-tracker
+# From the cycle-tracker directory
+ln -s "$(pwd)/cycle-tracker" /usr/local/bin/cycle-tracker
+```
+
+Or add to your PATH in `~/.zshrc` or `~/.bashrc`:
+
+```bash
+export PATH="$PATH:/path/to/cycle-tracker"
 ```
 
 ## Usage
@@ -41,7 +48,13 @@ cycle-tracker start 4
 ```bash
 cycle-tracker cycle-phase
 ```
-Returns: `menstrual`, `follicular`, or `luteal`
+Returns: `◯ menstrual`, `◔ follicular`, or `◕ luteal`
+
+Visual indicators:
+- `◯` Empty circle = Menstrual phase
+- `◔` Quarter filled = Follicular phase  
+- `◕` Three-quarters filled = Luteal phase
+- `●` Full circle = Complete cycle
 
 This is the default command, so you can also just run:
 ```bash
@@ -108,11 +121,11 @@ Menstrual phase: 5 days (ends around 2026-03-27)
 
 # Check current phase
 $ cycle-tracker cycle-phase
-menstrual
+◯ menstrual
 
 # Get detailed status
 $ cycle-tracker status
-Current phase: menstrual
+◯  Current phase: menstrual
 Day 1 of menstrual phase (typically 5 days)
 Menstrual phase will end in 4 day(s) (2026-03-27)
 
