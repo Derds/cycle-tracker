@@ -31,6 +31,19 @@ def get_combined_visual():
     cycles = load_cycles()
     if cycles:
         cycle_phase, cycle_info = get_current_phase(cycles, today)
+        
+        # Customize cycle_info to show actual average instead of "typically"
+        from statistics import calculate_average_period_length
+        avg_period = calculate_average_period_length(cycles)
+        
+        # Replace "typically X days" with actual average
+        if "typically" in cycle_info and cycle_phase == 'menstrual':
+            # Extract day number from cycle_info
+            import re
+            match = re.search(r'Day (\d+) of menstrual phase', cycle_info)
+            if match:
+                day_num = match.group(1)
+                cycle_info = f"Day {day_num} of menstrual phase (avg {avg_period} days)"
     else:
         cycle_phase = None
         cycle_info = "No cycle data"
