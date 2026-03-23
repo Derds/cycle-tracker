@@ -28,17 +28,19 @@ def get_current_phase(cycles, today=None) -> Tuple[Optional[str], str]:
     # Find which cycle this date belongs to
     target_cycle = None
     for cycle in cycles:
-        if cycle.start_date <= today:
-            # Check if date falls within this cycle
-            if cycle.is_complete:
-                # Completed cycle: check if before end date
-                if today <= cycle.end_date:
-                    target_cycle = cycle
-                    break
-            else:
-                # Ongoing cycle: it's the latest one, use it
+        if cycle.start_date > today:
+            continue
+            
+        # Check if date falls within this cycle
+        if cycle.is_complete:
+            # Completed cycle: check if before end date
+            if today <= cycle.end_date:
                 target_cycle = cycle
                 break
+        else:
+            # Ongoing cycle: it's the latest one, use it
+            target_cycle = cycle
+            break
     
     if not target_cycle:
         # Date is before first recorded cycle
@@ -61,10 +63,11 @@ def get_current_phase(cycles, today=None) -> Tuple[Optional[str], str]:
         else:
             day_label = f"Day {days_since_start + 1} of menstrual phase (avg {period_days} days)"
         return 'menstrual', day_label
-    elif days_since_start < 14:
+    
+    if days_since_start < 14:
         return 'follicular', f"Day {days_since_start + 1} of cycle"
-    else:
-        return 'luteal', f"Day {days_since_start + 1} of cycle"
+    
+    return 'luteal', f"Day {days_since_start + 1} of cycle"
 
 
 def check_cycle_due(today, cycles) -> str:
@@ -86,10 +89,11 @@ def check_cycle_due(today, cycles) -> str:
     
     if days_diff < -2:
         return f"Next cycle expected in {abs(days_diff)} days (around {expected_start.strftime('%Y-%m-%d')})"
-    elif days_diff <= 2:
+    
+    if days_diff <= 2:
         return f"Next cycle is due (expected around {expected_start.strftime('%Y-%m-%d')})"
-    else:
-        return f"Next cycle is {days_diff} days overdue (expected {expected_start.strftime('%Y-%m-%d')})"
+    
+    return f"Next cycle is {days_diff} days overdue (expected {expected_start.strftime('%Y-%m-%d')})"
 
 
 def predict_phase_on_date(cycles, target_date) -> Tuple[Optional[str], str]:
@@ -115,19 +119,11 @@ def predict_phase_on_date(cycles, target_date) -> Tuple[Optional[str], str]:
     # If target is within current ongoing cycle
     if not current_cycle.is_complete and target_date >= current_cycle.start_date:
         days_into_cycle = (target_date - current_cycle.start_date).days
-        
-        # Estimate when this cycle will end
         expected_cycle_length = int(mean_cycle)
         
         # Check if target is still within this cycle
         if days_into_cycle < expected_cycle_length:
-            # Determine phase based on position in cycle
-            if days_into_cycle < avg_period:
-                return 'menstrual', f"Day {days_into_cycle + 1} of menstrual phase (estimated)"
-            elif days_into_cycle < 14:
-                return 'follicular', f"Day {days_into_cycle + 1} of cycle (estimated)"
-            else:
-                return 'luteal', f"Day {days_into_cycle + 1} of cycle (estimated)"
+            return _determine_phase_in_cycle(days_into_cycle, avg_period, estimated=True)
     
     # For dates beyond current cycle, predict future cycles
     if current_cycle.is_complete:
@@ -144,9 +140,22 @@ def predict_phase_on_date(cycles, target_date) -> Tuple[Optional[str], str]:
     if days_into_cycle < 0:
         # Target is between cycles (in the gap before next cycle starts)
         return None, f"Between cycles (next expected ~{estimate_start.strftime('%Y-%m-%d')})"
-    elif days_into_cycle < avg_period:
-        return 'menstrual', f"Likely day {days_into_cycle + 1} of menstrual phase (estimated)"
-    elif days_into_cycle < 14:
-        return 'follicular', f"Likely day {days_into_cycle + 1} of cycle (estimated)"
-    else:
-        return 'luteal', f"Likely day {days_into_cycle + 1} of cycle (estimated)"
+    
+    return _determine_phase_in_cycle(days_into_cycle, avg_period, estimated=True, likely=True)
+
+
+def _determine_phase_in_cycle(days_into_cycle: int, avg_period: int, estimated: bool = False, likely: bool = False) -> Tuple[str, str]:
+    """
+    Helper function to determine phase based on days into cycle.
+    Decouples phase logic from prediction and display concerns.
+    """
+    prefix = "Likely day" if likely else "Day"
+    suffix = " (estimated)" if estimated else ""
+    
+    if days_into_cycle < avg_period:
+        return 'menstrual', f"{prefix} {days_into_cycle + 1} of menstrual phase{suffix}"
+    
+    if days_into_cycle < 14:
+        return 'follicular', f"{prefix} {days_into_cycle + 1} of cycle{suffix}"
+    
+    return 'luteal', f"{prefix} {days_into_cycle + 1} of cycle{suffix}"

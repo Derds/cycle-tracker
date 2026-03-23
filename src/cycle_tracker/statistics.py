@@ -6,7 +6,7 @@ adapted for individual tracking.
 """
 
 import math
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 from datetime import datetime, timedelta
 from data_manager import Cycle, get_valid_cycles, DEFAULT_PERIOD_LENGTH, DEFAULT_CYCLE_LENGTH
 
@@ -182,6 +182,12 @@ def get_daily_updated_prediction(current_cycle: Cycle, historical_cycles: List[C
     Update cycle end prediction daily as cycle progresses.
     
     Sequential prediction approach: predictions become more accurate over time.
+    
+    NOTE: The confidence calculation here is simplified and not statistically rigorous.
+    TODO: Implement proper confidence intervals based on sample size and variance.
+    The current implementation (50% + progress_factor * 40) is a heuristic that should
+    be replaced with proper statistical confidence calculations (e.g., t-distribution
+    for small samples, accounting for prediction uncertainty).
     """
     mean, std_dev = calculate_cycle_statistics(historical_cycles, exclude_outliers=True)
     
@@ -189,6 +195,7 @@ def get_daily_updated_prediction(current_cycle: Cycle, historical_cycles: List[C
     days_remaining = max(0, expected_total_length - days_elapsed)
     
     # Confidence increases as cycle progresses (50% → 90%)
+    # FIXME: This is a heuristic approximation, not a true confidence interval
     progress_factor = min(days_elapsed / expected_total_length, 1.0)
     
     # Narrow prediction range as we progress
@@ -203,5 +210,6 @@ def get_daily_updated_prediction(current_cycle: Cycle, historical_cycles: List[C
         'expected_end': expected_end,
         'earliest_end': earliest_end,
         'latest_end': latest_end,
-        'confidence': int(50 + progress_factor * 40)
+        'confidence': int(50 + progress_factor * 40),  # Heuristic, not statistical
+        'std_dev': adjusted_std
     }

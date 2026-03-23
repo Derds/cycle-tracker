@@ -4,7 +4,7 @@ Display and formatting functions for cycle tracker output.
 
 import calendar as cal
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional, Tuple
 from data_manager import Cycle
 from predictions import predict_phase_on_date
 from statistics import (
@@ -42,74 +42,135 @@ def print_box(lines: List[str]):
 
 def show_status(cycles: List[Cycle]):
     """Show current cycle status with detailed statistics"""
-    today = datetime.now().date()
-    
     if not cycles:
         print("No cycle data. Use 'cycle-tracker start' to begin tracking.")
         return
+    
+    status_data = _prepare_status_data(cycles)
+    
+    if not status_data:
+        print(status_data.get('message', 'No status available'))
+        return
+    
+    _render_status_box(status_data)
+
+
+def _prepare_status_data(cycles: List[Cycle]) -> dict:
+    """
+    Prepare all data needed for status display.
+    Decouples calculation logic from presentation.
+    """
+    today = datetime.now().date()
     
     from predictions import get_current_phase
     phase, info = get_current_phase(cycles, today)
     
     if not phase:
-        print(info)
-        return
+        return {'message': info}
     
     current_cycle = cycles[-1]
     days_elapsed = (today - current_cycle.start_date).days
-    visual = PHASE_VISUALS.get(phase, '')
     
-    lines = [
-        f"{visual}  Current Phase: {phase.upper()}",
-        "",
-        info
-    ]
-    
-    # Period end information
-    avg_period = calculate_average_period_length(cycles)
-    period_days = current_cycle.period_length or avg_period
-    
-    if current_cycle.period_end_date:
-        lines.append(f"Period: {current_cycle.period_length} days (ended {current_cycle.period_end_date.strftime('%Y-%m-%d')})")
-    else:
-        period_end_estimate = current_cycle.start_date + timedelta(days=period_days - 1)
-        if today <= period_end_estimate:
-            days_left = (period_end_estimate - today).days
-            if days_left == 0:
-                lines.append(f"Period expected to end today ({period_end_estimate.strftime('%Y-%m-%d')})")
-            else:
-                lines.append(f"Period expected to end in {days_left} day(s) ({period_end_estimate.strftime('%Y-%m-%d')})")
+    data = {
+        'phase': phase,
+        'phase_info': info,
+        'visual': PHASE_VISUALS.get(phase, ''),
+        'period_info': _calculate_period_info(current_cycle, cycles, today),
+        'statistics': None
+    }
     
     # Statistics (if enough data)
     valid_cycles = get_valid_cycles(cycles, exclude_outliers=True)
     if len(valid_cycles) >= 2:
+        data['statistics'] = _calculate_statistics(cycles, valid_cycles, current_cycle, days_elapsed)
+    
+    return data
+
+
+def _calculate_period_info(current_cycle: Cycle, cycles: List[Cycle], today: datetime.date) -> Optional[str]:
+    """Calculate period end information"""
+    if current_cycle.period_end_date:
+        return f"Period: {current_cycle.period_length} days (ended {current_cycle.period_end_date.strftime('%Y-%m-%d')})"
+    
+    avg_period = calculate_average_period_length(cycles)
+    period_days = current_cycle.period_length or avg_period
+    period_end_estimate = current_cycle.start_date + timedelta(days=period_days - 1)
+    
+    if today > period_end_estimate:
+        return None
+    
+    days_left = (period_end_estimate - today).days
+    
+    if days_left == 0:
+        return f"Period expected to end today ({period_end_estimate.strftime('%Y-%m-%d')})"
+    
+    return f"Period expected to end in {days_left} day(s) ({period_end_estimate.strftime('%Y-%m-%d')})"
+
+
+def _calculate_statistics(cycles: List[Cycle], valid_cycles: List[Cycle], current_cycle: Cycle, days_elapsed: int) -> dict:
+    """Calculate statistical data for display"""
+    mean, std_dev = calculate_cycle_statistics(cycles, exclude_outliers=True)
+    prediction = get_daily_updated_prediction(current_cycle, valid_cycles, days_elapsed)
+    quality = calculate_tracking_quality(cycles)
+    outliers = [c for c in cycles if c.is_outlier]
+    
+    stats = {
+        'mean': mean,
+        'std_dev': std_dev,
+        'prediction': prediction if prediction['days_remaining'] > 0 else None,
+        'quality': quality,
+        'outlier_count': len(outliers)
+    }
+    
+    # Luteal phase
+    if len(valid_cycles) >= 3:
+        luteal_mean, luteal_std = calculate_luteal_phase_stats(cycles)
+        stats['luteal'] = (luteal_mean, luteal_std)
+    
+    return stats
+
+
+def _render_status_box(data: dict):
+    """Render status data in formatted box"""
+    lines = [
+        f"{data['visual']}  Current Phase: {data['phase'].upper()}",
+        "",
+        data['phase_info']
+    ]
+    
+    if data['period_info']:
+        lines.append(data['period_info'])
+    
+    stats = data.get('statistics')
+    if not stats:
+        print_box(lines)
+        return
+    
+    lines.append("")
+    lines.append(f"Cycle length: {stats['mean']:.0f} ± {stats['std_dev']:.1f} days (avg ± variation)")
+    
+    if stats['prediction']:
+        pred = stats['prediction']
+        earliest = pred['earliest_end'].strftime('%b %d')
+        latest = pred['latest_end'].strftime('%b %d')
+        
+        # NOTE: Confidence value is heuristic, not statistical
+        lines.append(f"Expected cycle end: {earliest} - {latest} ({pred['confidence']}% confidence*)")
+    
+    quality_emoji = "🟢" if stats['quality'] >= 80 else "🟡" if stats['quality'] >= 60 else "🔴"
+    lines.append(f"Tracking quality: {quality_emoji} {stats['quality']}/100")
+    
+    if stats['outlier_count'] > 0:
+        lines.append(f"⚠️  {stats['outlier_count']} outlier cycle(s) excluded from stats")
+    
+    if stats.get('luteal'):
+        luteal_mean, _ = stats['luteal']
+        lines.append(f"Luteal phase: ~{luteal_mean} days (stable)")
+    
+    # Add note about confidence
+    if stats['prediction']:
         lines.append("")
-        
-        mean, std_dev = calculate_cycle_statistics(cycles, exclude_outliers=True)
-        lines.append(f"Cycle length: {mean:.0f} ± {std_dev:.1f} days (avg ± variation)")
-        
-        # Daily updated prediction
-        prediction = get_daily_updated_prediction(current_cycle, valid_cycles, days_elapsed)
-        
-        if prediction['days_remaining'] > 0:
-            earliest = prediction['earliest_end'].strftime('%b %d')
-            latest = prediction['latest_end'].strftime('%b %d')
-            lines.append(f"Expected cycle end: {earliest} - {latest} ({prediction['confidence']}% confidence)")
-        
-        # Quality score
-        quality = calculate_tracking_quality(cycles)
-        quality_emoji = "🟢" if quality >= 80 else "🟡" if quality >= 60 else "🔴"
-        lines.append(f"Tracking quality: {quality_emoji} {quality}/100")
-        
-        # Outlier warning
-        outliers = [c for c in cycles if c.is_outlier]
-        if outliers:
-            lines.append(f"⚠️  {len(outliers)} outlier cycle(s) excluded from stats")
-        
-        # Luteal phase
-        if len(valid_cycles) >= 3:
-            luteal_mean, luteal_std = calculate_luteal_phase_stats(cycles)
-            lines.append(f"Luteal phase: ~{luteal_mean} days (stable)")
+        lines.append("*Confidence is heuristic-based, not statistical")
     
     print_box(lines)
 
@@ -117,6 +178,18 @@ def show_status(cycles: List[Cycle]):
 def show_calendar_view(cycles: List[Cycle], month_offset=0):
     """Show ASCII calendar for a specific month with phase predictions"""
     today = datetime.now().date()
+    target_year, target_month = _calculate_target_month(today, month_offset)
+    
+    month_cal = cal.monthcalendar(target_year, target_month)
+    month_name = cal.month_name[target_month]
+    
+    _render_calendar_header(month_name, target_year)
+    _render_calendar_body(cycles, month_cal, target_year, target_month)
+    _render_calendar_footer(cycles)
+
+
+def _calculate_target_month(today: datetime.date, month_offset: int) -> Tuple[int, int]:
+    """Calculate target year and month from offset"""
     target_month = today.month + month_offset
     target_year = today.year
     
@@ -128,37 +201,46 @@ def show_calendar_view(cycles: List[Cycle], month_offset=0):
         target_month += 12
         target_year -= 1
     
-    month_cal = cal.monthcalendar(target_year, target_month)
-    month_name = cal.month_name[target_month]
-    
+    return target_year, target_month
+
+
+def _render_calendar_header(month_name: str, target_year: int):
+    """Render calendar header"""
     print(f"\n╭{'─' * 56}╮")
     print(f"│  {month_name} {target_year} - Cycle Calendar{' ' * (56 - len(f'{month_name} {target_year} - Cycle Calendar') - 2)}│")
     print(f"├{'─' * 56}┤")
     print("│  Mon  Tue  Wed  Thu  Fri  Sat  Sun                  │")
     print(f"├{'─' * 56}┤")
-    
+
+
+def _render_calendar_body(cycles: List[Cycle], month_cal, target_year: int, target_month: int):
+    """Render calendar body with phase indicators"""
     for week in month_cal:
         line = "│  "
         for day in week:
             if day == 0:
                 line += "     "
+                continue
+            
+            date = datetime(target_year, target_month, day).date()
+            phase, _ = predict_phase_on_date(cycles, date)
+            
+            if phase:
+                emoji = PHASE_VISUALS.get(phase, ' ')
+                line += f"{emoji}{day:2d}  "
             else:
-                date = datetime(target_year, target_month, day).date()
-                phase, _ = predict_phase_on_date(cycles, date)
-                
-                if phase:
-                    emoji = PHASE_VISUALS.get(phase, ' ')
-                    line += f"{emoji}{day:2d}  "
-                else:
-                    line += f" {day:2d}  "
+                line += f" {day:2d}  "
         
         line += " " * (55 - len(line) + 2) + "│"
         print(line)
     
     print(f"╰{'─' * 56}╯")
+
+
+def _render_calendar_footer(cycles: List[Cycle]):
+    """Render calendar footer with legend and notes"""
     print("\nLegend: ◯ Menstrual  ◔ Follicular  ◕ Luteal")
     
-    # Show outlier warning if any
     outliers = [c for c in cycles if c.is_outlier]
     if outliers:
         print(f"Note: {len(outliers)} outlier cycle(s) excluded from predictions")
@@ -173,44 +255,83 @@ def show_prediction(cycles: List[Cycle]):
         print("No cycle data available. Start tracking to see predictions.")
         return
     
+    prediction_data = _prepare_prediction_data(cycles)
+    
+    if not prediction_data:
+        return
+    
+    _render_prediction_box(prediction_data)
+
+
+def _prepare_prediction_data(cycles: List[Cycle]) -> Optional[dict]:
+    """
+    Prepare all data needed for prediction display.
+    Decouples calculation logic from presentation.
+    """
     valid_cycles = get_valid_cycles(cycles, exclude_outliers=True)
     
     if len(valid_cycles) < 2:
         print("Need at least 2 valid cycles for predictions.")
         if len(cycles) - len(valid_cycles) > 0:
             print(f"({len(cycles) - len(valid_cycles)} outlier cycles excluded)")
-        return
+        return None
     
     from statistics import predict_next_cycle_date
     earliest, expected, latest = predict_next_cycle_date(cycles)
     mean, std_dev = calculate_cycle_statistics(cycles, exclude_outliers=True)
     quality = calculate_tracking_quality(cycles)
-    
-    lines = [
-        "📅 Next Cycle Prediction",
-        "",
-        f"Expected start: {expected.strftime('%Y-%m-%d')}",
-        f"Likely range: {earliest.strftime('%b %d')} - {latest.strftime('%b %d')}",
-        f"Confidence: 68% (±1 std dev)",
-        "",
-        f"Based on {len(valid_cycles)} valid cycles:",
-        f"  Average length: {mean:.1f} days",
-        f"  Variation: ±{std_dev:.1f} days",
-        f"  Tracking quality: {quality}/100"
-    ]
-    
-    # Outlier info
     outliers = [c for c in cycles if c.is_outlier]
-    if outliers:
-        lines.append(f"  ({len(outliers)} outlier(s) excluded)")
+    
+    data = {
+        'earliest': earliest,
+        'expected': expected,
+        'latest': latest,
+        'mean': mean,
+        'std_dev': std_dev,
+        'quality': quality,
+        'valid_count': len(valid_cycles),
+        'outlier_count': len(outliers)
+    }
     
     # Luteal phase
     if len(valid_cycles) >= 3:
         luteal_mean, luteal_std = calculate_luteal_phase_stats(cycles)
+        data['luteal'] = (luteal_mean, luteal_std)
+    
+    return data
+
+
+def _render_prediction_box(data: dict):
+    """Render prediction data in formatted box"""
+    lines = [
+        "📅 Next Cycle Prediction",
+        "",
+        f"Expected start: {data['expected'].strftime('%Y-%m-%d')}",
+        f"Likely range: {data['earliest'].strftime('%b %d')} - {data['latest'].strftime('%b %d')}",
+        f"Confidence: 68% (±1 std dev)*",
+        "",
+        f"Based on {data['valid_count']} valid cycles:",
+        f"  Average length: {data['mean']:.1f} days",
+        f"  Variation: ±{data['std_dev']:.1f} days",
+        f"  Tracking quality: {data['quality']}/100"
+    ]
+    
+    if data['outlier_count'] > 0:
+        lines.append(f"  ({data['outlier_count']} outlier(s) excluded)")
+    
+    if data.get('luteal'):
+        luteal_mean, luteal_std = data['luteal']
         lines.extend([
             "",
             f"Luteal phase: {luteal_mean} ± {luteal_std:.1f} days",
             "(Luteal phase is typically more stable)"
         ])
+    
+    lines.extend([
+        "",
+        "*NOTE: Confidence intervals are approximate.",
+        "For small sample sizes (<10 cycles), actual",
+        "confidence may be lower than stated."
+    ])
     
     print_box(lines)
