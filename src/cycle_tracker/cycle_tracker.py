@@ -29,6 +29,7 @@ from data_manager import (
     load_cycles,
     add_cycle,
     update_period_end,
+    edit_cycle,
     DEFAULT_PERIOD_LENGTH
 )
 from statistics import (
@@ -46,6 +47,16 @@ from display import (
 from graph import graph_cycle_history
 
 
+def parse_date(date_str: str):
+    """Parse a date string in several common formats. Returns a date object."""
+    for fmt in ['%Y-%m-%d', '%d %B %Y', '%d %b %Y', '%B %d %Y', '%b %d %Y']:
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f"Could not parse date '{date_str}'. Try: 2026-04-20, 20 Apr 2026, Apr 20 2026")
+
+
 def print_help():
     """Print comprehensive help text"""
     print("╭────────────────────────────────────────────────────────╮")
@@ -56,11 +67,19 @@ def print_help():
     print("  cycle-tracker setup")
     print("    Initialize data file (first time only)\n")
     
-    print("  cycle-tracker start [period_length]")
+    print("  cycle-tracker start [period_length] [--date DATE]")
     print("    Start a new cycle when your period begins")
     print("    Automatically ends previous cycle")
-    print("    Optional: Specify expected period length in days\n")
+    print("    Optional: Specify expected period length in days")
+    print("    Optional: --date DATE to log a past cycle start\n")
     
+    print("  cycle-tracker edit [N] [--start DATE] [--end DATE] [--period-end DATE]")
+    print("    Edit a recent cycle (N=1 last, N=2 second-to-last; default N=1)")
+    print("    Any combination of fields can be updated in one command")
+    print("    Recalculates period length when start/period-end changes")
+    print("    Example: cycle-tracker edit --period-end 2026-04-26")
+    print("    Example: cycle-tracker edit 2 --start 2026-03-21\n")
+
     print("  cycle-tracker end-period")
     print("    Mark when bleeding stops (recommended)")
     print("    Tracks actual period length for better predictions\n")
@@ -135,23 +154,35 @@ def main():
         
         elif command == "start":
             period_length = None
-            if len(sys.argv) > 2:
-                try:
-                    period_length = int(sys.argv[2])
-                    if period_length < 1 or period_length > 15:
-                        print("Error: Period length must be between 1-15 days")
+            start_date = datetime.now().date()
+
+            # Parse optional positional period_length and --date flag
+            extra_args = sys.argv[2:]
+            i = 0
+            while i < len(extra_args):
+                if extra_args[i] == '--date':
+                    if i + 1 >= len(extra_args):
+                        print("Error: --date requires a date value")
                         sys.exit(1)
-                except ValueError:
-                    print("Error: Period length must be a number")
-                    sys.exit(1)
+                    start_date = parse_date(extra_args[i + 1])
+                    i += 2
+                else:
+                    try:
+                        period_length = int(extra_args[i])
+                        if period_length < 1 or period_length > 15:
+                            print("Error: Period length must be between 1-15 days")
+                            sys.exit(1)
+                    except ValueError:
+                        print("Error: Period length must be a number")
+                        sys.exit(1)
+                    i += 1
             
             cycles = load_cycles()
             
             # Show previous cycle info if auto-completing
             if cycles and not cycles[-1].is_complete:
                 prev_start = cycles[-1].start_date
-                today = datetime.now().date()
-                prev_length = (today - prev_start).days
+                prev_length = (start_date - prev_start).days
                 print(f"Previous cycle from {prev_start.strftime('%Y-%m-%d')} automatically completed.")
                 print(f"That cycle was {prev_length} days long.\n")
             
@@ -159,7 +190,7 @@ def main():
             if period_length is None:
                 period_length = calculate_average_period_length(cycles) if cycles else DEFAULT_PERIOD_LENGTH
             
-            new_cycle = add_cycle(datetime.now().date(), period_length=period_length)
+            new_cycle = add_cycle(start_date, period_length=period_length)
             print(f"New cycle started on {new_cycle.start_date.strftime('%Y-%m-%d')}")
             print(f"Expected period length: ~{period_length} days")
             print(f"Ends around: {(new_cycle.start_date + timedelta(days=period_length-1)).strftime('%Y-%m-%d')}")
@@ -170,6 +201,53 @@ def main():
             period_length = update_period_end(today)
             # Success message printed by update_period_end
         
+        elif command == "edit":
+            # Usage: edit [N] [--start DATE] [--end DATE] [--period-end DATE]
+            # N=1 (default) = last cycle, N=2 = second-to-last
+            extra_args = sys.argv[2:]
+            n = 1
+            start_date = None
+            end_date = None
+            period_end_date = None
+
+            i = 0
+            if extra_args and extra_args[0].isdigit():
+                n = int(extra_args[0])
+                i = 1
+
+            while i < len(extra_args):
+                flag = extra_args[i]
+                if flag in ('--start', '--end', '--period-end'):
+                    if i + 1 >= len(extra_args):
+                        print(f"Error: {flag} requires a date value")
+                        sys.exit(1)
+                    date_val = parse_date(extra_args[i + 1])
+                    if flag == '--start':
+                        start_date = date_val
+                    elif flag == '--end':
+                        end_date = date_val
+                    else:
+                        period_end_date = date_val
+                    i += 2
+                else:
+                    print(f"Error: Unknown option '{flag}'")
+                    print("Usage: cycle-tracker edit [N] [--start DATE] [--end DATE] [--period-end DATE]")
+                    sys.exit(1)
+
+            if not any([start_date, end_date, period_end_date]):
+                print("Error: Nothing to update. Provide at least one of: --start, --end, --period-end")
+                print("Usage: cycle-tracker edit [N] [--start DATE] [--end DATE] [--period-end DATE]")
+                sys.exit(1)
+
+            cycle = edit_cycle(n, start_date=start_date, end_date=end_date, period_end_date=period_end_date)
+            label = "Last" if n == 1 else f"Cycle -{n}"
+            print(f"✓ {label} cycle updated:")
+            print(f"  Start:      {cycle.start_date.strftime('%Y-%m-%d')}")
+            if cycle.end_date:
+                print(f"  End:        {cycle.end_date.strftime('%Y-%m-%d')}")
+            if cycle.period_end_date:
+                print(f"  Period end: {cycle.period_end_date.strftime('%Y-%m-%d')} ({cycle.period_length} days)")
+
         elif command == "status":
             cycles = load_cycles()
             show_status(cycles)
@@ -186,18 +264,10 @@ def main():
                 sys.exit(1)
             
             date_str = ' '.join(sys.argv[2:])
-            target_date = None
-            
-            for fmt in ['%Y-%m-%d', '%d %B %Y', '%d %b %Y', '%B %d %Y', '%b %d %Y']:
-                try:
-                    target_date = datetime.strptime(date_str, fmt).date()
-                    break
-                except ValueError:
-                    continue
-            
-            if not target_date:
-                print(f"Error: Could not parse date '{date_str}'")
-                print("Try: 2026-05-09, 9 May 2026, May 9 2026")
+            try:
+                target_date = parse_date(date_str)
+            except ValueError as e:
+                print(f"Error: {e}")
                 sys.exit(1)
             
             cycles = load_cycles()
@@ -245,7 +315,9 @@ def main():
         else:
             print("Cycle Tracker - Quick Help\n")
             print("Commands:")
-            print("  start          - Start new cycle (auto-ends previous)")
+            print("  start [len] [--date D] - Start new cycle (auto-ends previous)")
+            print("  edit [N] [--start D] [--end D] [--period-end D]")
+            print("                         - Edit last (N=1) or recent cycle")
             print("  end-period     - Mark when bleeding stops")
             print("  status         - Show detailed stats")
             print("  predict        - Predict next cycle")

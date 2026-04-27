@@ -160,6 +160,49 @@ def update_period_end(period_end_date) -> Optional[int]:
     return period_length
 
 
+def edit_cycle(n: int, start_date=None, end_date=None, period_end_date=None) -> 'Cycle':
+    """
+    Edit a recent cycle in-place. n=1 is the last cycle, n=2 is second-to-last.
+    Only fields passed as non-None are updated.
+    Recalculates period_length when period_end_date or start_date changes.
+    If start_date changes, the preceding cycle's end_date is updated to maintain continuity.
+    """
+    cycles = load_cycles()
+
+    if not cycles:
+        raise ValueError("No cycles recorded yet")
+
+    if n < 1 or n > len(cycles):
+        raise ValueError(f"No cycle at position {n} (only {len(cycles)} cycle(s) recorded)")
+
+    cycle = cycles[-n]
+
+    if start_date is not None:
+        cycle.start_date = start_date
+        # Keep the preceding cycle's end_date contiguous with this start
+        if n < len(cycles):
+            cycles[-(n + 1)].end_date = start_date - timedelta(days=1)
+
+    if end_date is not None:
+        cycle.end_date = end_date
+
+    if period_end_date is not None:
+        cycle.period_end_date = period_end_date
+
+    # Recalculate period_length whenever start or period_end changes
+    if cycle.period_end_date:
+        period_length = (cycle.period_end_date - cycle.start_date).days + 1
+        if period_length < MIN_PERIOD_LENGTH or period_length > MAX_PERIOD_LENGTH:
+            raise ValueError(
+                f"Period length of {period_length} days seems unusual "
+                f"(expected {MIN_PERIOD_LENGTH}–{MAX_PERIOD_LENGTH} days)"
+            )
+        cycle.period_length = period_length
+
+    save_cycles(cycles)
+    return cycle
+
+
 def get_valid_cycles(cycles: List[Cycle], exclude_outliers=True) -> List[Cycle]:
     """
     Get valid completed cycles, optionally excluding outliers.
